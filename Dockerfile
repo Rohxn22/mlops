@@ -37,7 +37,7 @@ ENV AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
 ENV AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
 
 
-RUN dvc pull --force
+RUN dvc pull prediction_model/datasets --force
 
 RUN python /app/prediction_model/training_pipeline.py
 

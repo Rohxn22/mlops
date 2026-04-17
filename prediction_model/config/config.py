@@ -51,7 +51,7 @@ S3_BUCKET = "mlops-dataset-792633646256-eu-north-1-an"
 
 FOLDER="datadrift"
 
-TRACKING_URI="http://ec2-13-53-245-79.eu-north-1.compute.amazonaws.com:5000/"
+TRACKING_URI="http://ec2-13-63-102-32.eu-north-1.compute.amazonaws.com:5000/"
 
 
 EXPERIMENT_NAME="loan_prediction_model"

@@ -24,6 +24,7 @@ RUN chmod +w /app/prediction_model/datasets
 
 
 ENV PYTHONPATH "${PYTHONPATH}:/app/prediction_model"
+ENV GIT_PYTHON_REFRESH=quiet
 
 
 RUN pip install --no-cache-dir -r requirements.txt

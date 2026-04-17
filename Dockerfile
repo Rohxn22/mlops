@@ -14,6 +14,10 @@ RUN chmod +w /app/tests
 
 RUN chmod +x /app/prediction_model
 
+# Create directories if they don't exist
+RUN mkdir -p /app/prediction_model/trained_models
+RUN mkdir -p /app/prediction_model/datasets
+
 RUN chmod +w /app/prediction_model/trained_models
 
 RUN chmod +w /app/prediction_model/datasets

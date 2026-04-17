@@ -2,3 +2,4 @@
     remote = myremote
 ['remote "myremote"']
     url = s3://mlops-dataset-792633646256-eu-north-1-an
+    region = eu-north-1

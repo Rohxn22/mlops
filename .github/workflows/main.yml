@@ -54,6 +54,7 @@ jobs:
           # Run new container
           docker run -d \
             --name mlops-app \
+            --restart always \
             -p 8005:8005 \
             -e AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }} \
             -e AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} \

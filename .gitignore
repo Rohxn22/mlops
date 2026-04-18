@@ -1,0 +1,100 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+parts/
+var/
+sdist/
+develop-eggs/
+.installed.cfg
+lib/
+lib64/
+
+# Virtual Environments
+venv/
+env/
+ENV/
+.env
+drift-venv/
+mlflow-venv/
+*-venv/
+*_venv/
+
+# Environment variables
+.env
+.env.*
+*.env
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+*.ipynb
+
+# ML / Model files
+*.pkl
+*.pickle
+*.joblib
+*.h5
+*.model
+prediction_model/trained_models/*
+!prediction_model/trained_models/__init__.py
+
+# Dataset files (managed by DVC)
+prediction_model/datasets/*
+!prediction_model/datasets/__init__.py
+
+# MLflow
+mlruns/
+mlflow.db
+mlflow.log
+
+# DVC
+.dvc/tmp/
+.dvc/cache/
+
+# Drift monitoring generated reports
+drift_monitoring/*.html
+drift_report_*.html
+
+# Docker
+.dockerignore
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+logs/
+
+# Test results
+tests/test-results.xml
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Temporary files
+*.tmp
+*.temp
+tmp/
+temp/
+
+# AWS credentials (never commit these)
+.aws/
+credentials

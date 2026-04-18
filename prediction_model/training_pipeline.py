@@ -77,7 +77,9 @@ def objective(params):
     # Fit the pipeline
     mlflow.xgboost.autolog()
     mlflow.set_experiment("loan_prediction_model")
-    with mlflow.start_run(nested=True):
+    trial_number = len(trials.trials) + 1
+    run_name = f"xgboost-trial-{trial_number}"
+    with mlflow.start_run(nested=True, run_name=run_name):
         # Fit the pipeline
         classification_pipeline.fit(X_train, y_train)
         

@@ -29,9 +29,7 @@ X, Y = get_data(config.TRAIN_FILE)
 X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.2, random_state=42)
 
 
-# ─────────────────────────────────────────────
 # BASELINE MODEL — Logistic Regression
-# ─────────────────────────────────────────────
 def train_baseline():
     baseline_pipeline = Pipeline([
         ('DomainProcessing', pp.DomainProcessing(variable_to_modify=config.FEATURE_TO_MODIFY, variable_to_add=config.FEATURE_TO_ADD)),
@@ -66,9 +64,8 @@ def train_baseline():
         print(f"Baseline (Logistic Regression) → F1: {f1:.4f} | Accuracy: {accuracy:.4f}")
 
 
-# ─────────────────────────────────────────────
+
 # OPTIMIZED MODEL — XGBoost with Hyperopt
-# ─────────────────────────────────────────────
 
 # Define the search space
 search_space = {

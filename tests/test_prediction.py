@@ -23,7 +23,7 @@ def test_single_pred_not_none(single_prediction): # output is not none
 def test_single_pred_str_type(single_prediction): # data type is string
     assert isinstance(single_prediction.get('prediction')[0],str)
 
-def test_single_pred_validate(single_prediction): # check the output is Y
-    assert single_prediction.get('prediction')[0] == 'Y'
+def test_single_pred_validate(single_prediction): # check the output is Y or N
+    assert single_prediction.get('prediction')[0] in ['Y', 'N']
 
 

@@ -53,6 +53,7 @@ WORKDIR /app
 
 # Copy only application code from builder
 COPY --from=builder /app/main.py .
+COPY --from=builder /app/static ./static
 COPY --from=builder /app/prediction_model ./prediction_model
 COPY --from=builder /app/requirements.txt .
 

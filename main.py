@@ -1,5 +1,7 @@
 from fastapi import FastAPI , File, UploadFile
 from fastapi.responses import StreamingResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import uvicorn
 import numpy as np
@@ -54,9 +56,13 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
-Instrumentator().instrument(app).expose(app) 
+Instrumentator().instrument(app).expose(app)
 
-class LoanPrediction(BaseModel):
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+@app.get("/")
+def index():
+    return FileResponse("static/index.html")
     Gender: str
     Married: str
     Dependents: str

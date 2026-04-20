@@ -124,50 +124,10 @@ def index():
     return FileResponse("static/index.html")
 
 
-@app.post("/predict")
-def predict(loan_details: LoanPrediction):
+@app.post("/prediction_api")
+def predict_api(loan_details: LoanPrediction):
     data = loan_details.model_dump()
     prediction = generate_predictions([data])["prediction"][0]
-    pred = "Approved" if prediction == "Y" else "Rejected"
-    return {"status": pred}
-
-
-@app.post("/prediction_ui")
-def predict_gui(
-    age: int,
-    occupation_status: str,
-    years_employed: float,
-    annual_income: int,
-    credit_score: int,
-    credit_history_years: float,
-    savings_assets: int,
-    current_debt: int,
-    defaults_on_file: int,
-    delinquencies_last_2yrs: int,
-    derogatory_marks: int,
-    product_type: str,
-    loan_intent: str,
-    loan_amount: int,
-    debt_to_income_ratio: float
-):
-    data_dict = {
-        'age': age,
-        'occupation_status': occupation_status,
-        'years_employed': years_employed,
-        'annual_income': annual_income,
-        'credit_score': credit_score,
-        'credit_history_years': credit_history_years,
-        'savings_assets': savings_assets,
-        'current_debt': current_debt,
-        'defaults_on_file': defaults_on_file,
-        'delinquencies_last_2yrs': delinquencies_last_2yrs,
-        'derogatory_marks': derogatory_marks,
-        'product_type': product_type,
-        'loan_intent': loan_intent,
-        'loan_amount': loan_amount,
-        'debt_to_income_ratio': debt_to_income_ratio
-    }
-    prediction = generate_predictions([data_dict])["prediction"][0]
     pred = "Approved" if prediction == "Y" else "Rejected"
     return {"status": pred}
 

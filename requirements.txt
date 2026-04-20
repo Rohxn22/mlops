@@ -1,14 +1,27 @@
+# Core ML Libraries
 numpy>=1.26
 pandas>=2.0
 scikit-learn>=1.4
 xgboost>=2.0
+joblib
+
+# Hyperparameter Optimization
 hyperopt>=0.2.7
+
+# MLflow for Experiment Tracking
 mlflow>=2.13
+
+# FastAPI and Web Framework
 fastapi>=0.103
 pydantic>=2.4
 uvicorn>=0.23
-boto3
 python-multipart
+
+# AWS Integration
+boto3
+
+# Monitoring
 prometheus_fastapi_instrumentator
-joblib
+
+# Testing
 pytest

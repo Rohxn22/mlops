@@ -101,3 +101,38 @@ temp/
 # AWS credentials (never commit these)
 .aws/
 credentials
+
+# Node modules (if any frontend dependencies)
+node_modules/
+
+# Python cache and compiled files
+*.pyc
+__pycache__/
+.pytest_cache/
+
+# MacOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+
+# Editor backups
+*.bak
+*.swp
+*.swo
+
+# Local development
+.local/
+local_*
+
+# API testing files
+test_api.py
+
+# Kubernetes manifests with secrets
+k8s-secrets.yaml
+secrets.yaml

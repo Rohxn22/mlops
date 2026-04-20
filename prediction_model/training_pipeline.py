@@ -5,9 +5,9 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import MinMaxScaler, LabelEncoder
 from sklearn.pipeline import Pipeline
 from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.model_selection import RandomizedSearchCV
 import mlflow
 import mlflow.sklearn
+from hyperopt import fmin, tpe, hp, Trials, STATUS_OK
 import xgboost as xgb
 
 from prediction_model.config import config
@@ -94,54 +94,69 @@ def train_baseline():
         print(f"Baseline LR → F1: {metrics['f1_score']:.4f} | Acc: {metrics['accuracy']:.4f}")
 
 
-# ── XGBoost with RandomizedSearchCV ───────────────────────────────────────
-param_dist = {
-    'XGBoost__max_depth':        np.arange(3, 10, dtype=int),
-    'XGBoost__learning_rate':    [0.01, 0.05, 0.1, 0.2, 0.3],
-    'XGBoost__n_estimators':     np.arange(50, 300, 50, dtype=int),
-    'XGBoost__subsample':        [0.5, 0.7, 0.8, 1.0],
-    'XGBoost__colsample_bytree': [0.5, 0.7, 0.8, 1.0],
-    'XGBoost__gamma':            [0, 0.5, 1, 2, 5],
-    'XGBoost__reg_alpha':        [0, 0.1, 0.5, 1],
-    'XGBoost__reg_lambda':       [0, 0.1, 0.5, 1],
+# ── XGBoost with Hyperopt ──────────────────────────────────────────────────
+
+# Define the search space
+search_space = {
+    'max_depth': hp.choice('max_depth', np.arange(3, 10, dtype=int)),
+    'learning_rate': hp.uniform('learning_rate', 0.01, 0.3),
+    'n_estimators': hp.choice('n_estimators', np.arange(50, 300, 50, dtype=int)),
+    'subsample': hp.uniform('subsample', 0.5, 1.0),
+    'colsample_bytree': hp.uniform('colsample_bytree', 0.5, 1.0),
+    'gamma': hp.uniform('gamma', 0, 5),
+    'reg_alpha': hp.uniform('reg_alpha', 0, 1),
+    'reg_lambda': hp.uniform('reg_lambda', 0, 1)
 }
 
+trials = Trials()
 
-def train_xgboost():
-    clf = xgb.XGBClassifier(eval_metric='logloss', use_label_encoder=False)
-    pipeline = Pipeline(build_preprocessing() + [('XGBoost', clf)])
 
-    search = RandomizedSearchCV(
-        pipeline, param_distributions=param_dist,
-        n_iter=5, scoring='f1', cv=3, random_state=42, n_jobs=-1
+def objective(params):
+    clf = xgb.XGBClassifier(
+        max_depth=params['max_depth'],
+        learning_rate=params['learning_rate'],
+        n_estimators=params['n_estimators'],
+        subsample=params['subsample'],
+        colsample_bytree=params['colsample_bytree'],
+        gamma=params['gamma'],
+        reg_alpha=params['reg_alpha'],
+        reg_lambda=params['reg_lambda'],
+        use_label_encoder=False,
+        eval_metric='logloss'
     )
 
+    classification_pipeline = Pipeline(build_preprocessing() + [('XGBoostClassifier', clf)])
+
+    mlflow.xgboost.autolog()
     mlflow.set_experiment(config.EXPERIMENT_NAME)
     run_tag = datetime.now().strftime("%m%d-%H%M")
+    run_name = f"xgboost-trial-{len(trials.trials) + 1}-{run_tag}"
 
-    with mlflow.start_run(run_name=f"xgb-randomsearch-{run_tag}"):
-        search.fit(X_train, y_train)
-        best = search.best_estimator_
-        y_pred = best.predict(X_train)
+    with mlflow.start_run(nested=True, run_name=run_name):
+        classification_pipeline.fit(X_train, y_train)
+        y_pred = classification_pipeline.predict(X_train)  # train set for optimization
 
-        metrics = {
-            'f1_score':  f1_score(y_train, y_pred),
-            'accuracy':  accuracy_score(y_train, y_pred),
-            'recall':    recall_score(y_train, y_pred),
-            'precision': precision_score(y_train, y_pred),
-        }
-        mlflow.log_params(search.best_params_)
-        mlflow.log_metrics(metrics)
-        mlflow.sklearn.log_model(best, config.MODEL_NAME)
+        f1        = f1_score(y_train, y_pred)
+        accuracy  = accuracy_score(y_train, y_pred)
+        recall    = recall_score(y_train, y_pred)
+        precision = precision_score(y_train, y_pred)
 
-        print(f"XGBoost best → F1: {metrics['f1_score']:.4f} | Acc: {metrics['accuracy']:.4f}")
-        print("Best params:", search.best_params_)
+        mlflow.log_metrics({
+            'f1_score': f1,
+            'accuracy': accuracy,
+            'recall': recall,
+            'precision': precision
+        })
+        mlflow.sklearn.log_model(classification_pipeline, config.MODEL_NAME)
+
+    return {'loss': 1 - f1, 'status': STATUS_OK}
 
 
 # ── Run ────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    print("\nTraining baseline (Logistic Regression)...")
+    print("Training baseline model (Logistic Regression)...")
     train_baseline()
 
-    print("\nRunning XGBoost RandomizedSearchCV (5 iterations)...")
-    train_xgboost()
+    print("\nRunning XGBoost hyperparameter tuning (5 trials)...")
+    best_params = fmin(fn=objective, space=search_space, algo=tpe.suggest, max_evals=5, trials=trials)
+    print("\nBest XGBoost hyperparameters:", best_params)

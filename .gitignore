@@ -51,7 +51,6 @@ prediction_model/trained_models/*
 # Dataset files (managed by DVC)
 prediction_model/datasets/*
 !prediction_model/datasets/__init__.py
-!prediction_model/datasets/loan_data_part_1.csv
 !prediction_model/datasets/*.dvc
 
 # MLflow

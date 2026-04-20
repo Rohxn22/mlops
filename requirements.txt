@@ -11,3 +11,4 @@ boto3
 python-multipart
 prometheus_fastapi_instrumentator
 joblib
+pytest

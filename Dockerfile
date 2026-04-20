@@ -22,7 +22,7 @@ RUN chmod +x /app/tests && \
 ENV PYTHONPATH="/app:/app/prediction_model"
 ENV GIT_PYTHON_REFRESH=quiet
 RUN pip install --no-cache-dir -r requirements.txt && \
-    pip install --no-cache-dir dvc[s3]
+    pip install --no-cache-dir "dvc[s3]==3.48.4"
 
 # AWS credentials for DVC pull and MLflow
 ARG AWS_ACCESS_KEY_ID

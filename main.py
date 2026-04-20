@@ -101,7 +101,20 @@ def health_check():
     # Test prediction function
     try:
         from prediction_model.predict import _load_best_model
-        model = _load_best_model()
+        
+        # Capture detailed debug output
+        import sys
+        from io import StringIO
+        
+        # Redirect stdout to capture debug prints
+        old_stdout = sys.stdout
+        sys.stdout = captured_output = StringIO()
+        
+        try:
+            model = _load_best_model()
+            debug_output = captured_output.getvalue()
+        finally:
+            sys.stdout = old_stdout
         
         # Try to get model info from MLflow
         experiment = mlflow.get_experiment_by_name(config.EXPERIMENT_NAME)
@@ -127,8 +140,16 @@ def health_check():
             model_info = "Experiment not found"
             
         prediction_status = f"OK - Model loaded successfully - {model_info}"
+        if debug_output.strip():
+            prediction_status += f" | Debug: {debug_output.strip()}"
+            
     except Exception as e:
-        prediction_status = f"Error: {str(e)}"
+        # Capture any debug output even on failure
+        debug_output = captured_output.getvalue() if 'captured_output' in locals() else ""
+        error_msg = str(e)
+        if debug_output.strip():
+            error_msg += f" | Debug: {debug_output.strip()}"
+        prediction_status = f"Error: {error_msg}"
     
     return {
         "status": "healthy",

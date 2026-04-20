@@ -7,7 +7,26 @@ import mlflow
 
 
 def _load_best_model():
-    """Fetches the best model from MLflow based on highest F1 score."""
+    """Fetches the best model - tries local first, then MLflow as fallback."""
+    
+    # QUICK FIX: Try local model first (most reliable)
+    local_model_paths = [
+        os.path.join(config.PACKAGE_ROOT, 'trained_models', 'loan_model_v2.pkl'),
+        os.path.join(config.PACKAGE_ROOT, 'trained_models', 'production_model.pkl')
+    ]
+    
+    for local_path in local_model_paths:
+        if os.path.exists(local_path):
+            try:
+                print(f"✅ Loading local model: {local_path}")
+                return joblib.load(local_path)
+            except Exception as e:
+                print(f"❌ Failed to load local model {local_path}: {e}")
+                continue
+    
+    print("🔍 No local model found, trying MLflow...")
+    
+    # FALLBACK: Try MLflow (can be unreliable)
     mlflow.set_tracking_uri(config.TRACKING_URI)
     
     # Try to get the specific experiment first
@@ -30,13 +49,7 @@ def _load_best_model():
     print(f"🔍 Debug: Found {len(runs_df)} runs in experiment")
     
     if runs_df.empty:
-        # Final fallback: try to load local model file
-        local_model_path = os.path.join(config.PACKAGE_ROOT, 'trained_models', 'loan_model_v2.pkl')
-        if os.path.exists(local_model_path):
-            print(f"Warning: No MLflow runs found. Loading local model: {local_model_path}")
-            return joblib.load(local_model_path)
-        else:
-            raise ValueError(f"No runs found in any experiment and no local model at {local_model_path}")
+        raise ValueError(f"No runs found in any experiment and no local model available")
     
     # Debug: Print run info
     for i, (_, run) in enumerate(runs_df.head(3).iterrows()):
@@ -74,12 +87,6 @@ def _load_best_model():
         except Exception as e:
             print(f"❌ Failed to load model from run {run_id[:8]}: {e}")
             continue
-    
-    # If all MLflow attempts fail, try local model
-    local_model_path = os.path.join(config.PACKAGE_ROOT, 'trained_models', 'loan_model_v2.pkl')
-    if os.path.exists(local_model_path):
-        print(f"Warning: All MLflow models failed. Loading local model: {local_model_path}")
-        return joblib.load(local_model_path)
     
     raise ValueError("Could not load any model from MLflow or local storage")
 

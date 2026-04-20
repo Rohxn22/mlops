@@ -55,6 +55,7 @@ COPY --from=builder /app/static ./static
 COPY --from=builder /app/prediction_model/__init__.py ./prediction_model/
 COPY --from=builder /app/prediction_model/predict.py ./prediction_model/
 COPY --from=builder /app/prediction_model/config ./prediction_model/config
+COPY --from=builder /app/prediction_model/trained_models ./prediction_model/trained_models
 
 # Copy optimized runtime requirements
 COPY requirements-runtime.txt .

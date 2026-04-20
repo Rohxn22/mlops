@@ -19,10 +19,11 @@ RUN chmod +x /app/tests && \
     chmod +w /app/prediction_model/trained_models && \
     chmod +w /app/prediction_model/datasets
 
-ENV PYTHONPATH="/app:/app/prediction_model"
-ENV GIT_PYTHON_REFRESH=quiet
-RUN pip install --no-cache-dir -r requirements.txt && \
-    pip install --no-cache-dir "dvc[s3]==3.48.4"
+# Install DVC with compatible dependencies first
+RUN pip install --no-cache-dir "dvc[s3]==3.48.4" "boto3>=1.34.0,<1.35.0" "botocore>=1.34.0,<1.35.0"
+
+# Then install our requirements
+RUN pip install --no-cache-dir -r requirements.txt
 
 # AWS credentials for DVC pull and MLflow
 ARG AWS_ACCESS_KEY_ID
@@ -30,7 +31,10 @@ ARG AWS_SECRET_ACCESS_KEY
 ENV AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
 ENV AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
 
-# Pull dataset from S3 via DVC
+ENV PYTHONPATH="/app:/app/prediction_model"
+ENV GIT_PYTHON_REFRESH=quiet
+
+# Pull dataset from S3 via DVC (proper MLOps workflow)
 RUN dvc pull prediction_model/datasets/loan_data_part_1.csv.dvc --force
 
 # Train model (logs to MLflow)

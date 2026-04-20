@@ -102,7 +102,31 @@ def health_check():
     try:
         from prediction_model.predict import _load_best_model
         model = _load_best_model()
-        prediction_status = "OK - Model loaded successfully"
+        
+        # Try to get model info from MLflow
+        experiment = mlflow.get_experiment_by_name(config.EXPERIMENT_NAME)
+        if experiment:
+            runs_df = mlflow.search_runs(
+                experiment_ids=[experiment.experiment_id],
+                order_by=['metrics.f1_score DESC'],
+                max_results=5
+            )
+            
+            # Check for tagged best model
+            best_tagged = runs_df[runs_df['tags.model_status'] == 'BEST_MODEL']
+            if not best_tagged.empty:
+                current_model = best_tagged.iloc[0]
+                model_info = f"🏆 BEST_MODEL: {current_model.get('params.model_type', 'Unknown')} (F1: {current_model.get('metrics.f1_score', 0):.4f})"
+            else:
+                current_model = runs_df.iloc[0] if not runs_df.empty else None
+                if current_model is not None:
+                    model_info = f"Highest F1: {current_model.get('params.model_type', 'Unknown')} (F1: {current_model.get('metrics.f1_score', 0):.4f})"
+                else:
+                    model_info = "No model info available"
+        else:
+            model_info = "Experiment not found"
+            
+        prediction_status = f"OK - Model loaded successfully - {model_info}"
     except Exception as e:
         prediction_status = f"Error: {str(e)}"
     

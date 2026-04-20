@@ -36,8 +36,17 @@ def _load_best_model():
         else:
             raise ValueError(f"No runs found in any experiment and no local model at {local_model_path}")
     
+    # Prioritize models tagged as "BEST_MODEL"
+    best_tagged_runs = runs_df[runs_df['tags.model_status'] == 'BEST_MODEL']
+    if not best_tagged_runs.empty:
+        print(f"🏆 Found {len(best_tagged_runs)} model(s) tagged as BEST_MODEL")
+        runs_to_try = best_tagged_runs
+    else:
+        print("ℹ️ No models tagged as BEST_MODEL, using highest F1 score")
+        runs_to_try = runs_df
+    
     # Find the best run with the model
-    for _, run in runs_df.iterrows():
+    for _, run in runs_to_try.iterrows():
         try:
             run_id = run['run_id']
             model_uri = f'runs:/{run_id}/{config.MODEL_NAME}'

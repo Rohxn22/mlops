@@ -1,0 +1,23 @@
+# Runtime-only dependencies for FastAPI prediction service
+# Excludes training dependencies like hyperopt, xgboost, pytest
+
+# Core ML Libraries (minimal)
+numpy>=1.26
+pandas>=2.0
+scikit-learn>=1.4
+joblib
+
+# MLflow for Model Loading
+mlflow>=2.13
+
+# FastAPI and Web Framework
+fastapi>=0.103
+pydantic>=2.4
+uvicorn>=0.23
+python-multipart
+
+# AWS Integration
+boto3
+
+# Monitoring
+prometheus_fastapi_instrumentator

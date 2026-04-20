@@ -56,7 +56,30 @@ class FeatureEngineer(BaseEstimator, TransformerMixin):
 # ── Load & split data ──────────────────────────────────────────────────────
 print("Loading and splitting dataset (75/25)...")
 X_train, X_test, y_train = load_and_split_dataset()
-print(f"  Train: {X_train.shape} | Test (no target): {X_test.shape}")
+print(f"  Train: {X_train.shape} | Test: {X_test.shape}")
+
+# For proper evaluation, we need y_test too
+# Let's modify the data loading to get y_test
+import os
+import pandas as pd
+from sklearn.model_selection import train_test_split
+
+filepath = os.path.join(config.DATAPATH, config.DATASET_FILE)
+df = pd.read_csv(filepath)
+X = df[config.FEATURES]
+y = df[config.TARGET]
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.25, random_state=42, stratify=y
+)
+
+X_train = X_train.reset_index(drop=True)
+X_test = X_test.reset_index(drop=True)
+y_train = y_train.reset_index(drop=True)
+y_test = y_test.reset_index(drop=True)
+
+print(f"  Train: {X_train.shape} | Test: {X_test.shape}")
+print(f"  y_train: {y_train.shape} | y_test: {y_test.shape}")
 
 
 # ── Shared preprocessing steps ─────────────────────────────────────────────
@@ -86,19 +109,33 @@ def train_baseline():
 
     with mlflow.start_run(run_name=f"baseline-lr-{run_tag}"):
         pipeline.fit(X_train, y_train)
-        y_pred = pipeline.predict(X_train)   # train-set sanity check
+        
+        # Evaluate on both train and test sets
+        y_train_pred = pipeline.predict(X_train)
+        y_test_pred = pipeline.predict(X_test)
 
-        metrics = {
-            'f1_score':  f1_score(y_train, y_pred),
-            'accuracy':  accuracy_score(y_train, y_pred),
-            'recall':    recall_score(y_train, y_pred),
-            'precision': precision_score(y_train, y_pred),
+        # Train metrics
+        train_metrics = {
+            'train_f1_score':  f1_score(y_train, y_train_pred),
+            'train_accuracy':  accuracy_score(y_train, y_train_pred),
+            'train_recall':    recall_score(y_train, y_train_pred),
+            'train_precision': precision_score(y_train, y_train_pred),
         }
+        
+        # Test metrics (the important ones!)
+        test_metrics = {
+            'f1_score':  f1_score(y_test, y_test_pred),
+            'accuracy':  accuracy_score(y_test, y_test_pred),
+            'recall':    recall_score(y_test, y_test_pred),
+            'precision': precision_score(y_test, y_test_pred),
+        }
+        
         mlflow.log_param("model_type", "LogisticRegression")
-        mlflow.log_metrics(metrics)
+        mlflow.log_metrics({**train_metrics, **test_metrics})
         mlflow.sklearn.log_model(pipeline, config.MODEL_NAME, registered_model_name=config.MODEL_NAME)
 
-        print(f"Baseline LR → F1: {metrics['f1_score']:.4f} | Acc: {metrics['accuracy']:.4f}")
+        print(f"Baseline LR → Train F1: {train_metrics['train_f1_score']:.4f} | Test F1: {test_metrics['f1_score']:.4f}")
+        print(f"             Train Acc: {train_metrics['train_accuracy']:.4f} | Test Acc: {test_metrics['accuracy']:.4f}")
 
 
 # ── XGBoost with Hyperopt ──────────────────────────────────────────────────
@@ -147,22 +184,37 @@ def objective(params):
 
     with mlflow.start_run(nested=True, run_name=run_name):
         classification_pipeline.fit(X_train, y_train)
-        y_pred = classification_pipeline.predict(X_train)  # train set for optimization
+        
+        # Evaluate on both train and test sets
+        y_train_pred = classification_pipeline.predict(X_train)
+        y_test_pred = classification_pipeline.predict(X_test)
 
-        f1        = f1_score(y_train, y_pred)
-        accuracy  = accuracy_score(y_train, y_pred)
-        recall    = recall_score(y_train, y_pred)
-        precision = precision_score(y_train, y_pred)
+        # Train metrics
+        train_f1 = f1_score(y_train, y_train_pred)
+        train_accuracy = accuracy_score(y_train, y_train_pred)
+        train_recall = recall_score(y_train, y_train_pred)
+        train_precision = precision_score(y_train, y_train_pred)
+        
+        # Test metrics (the important ones!)
+        test_f1 = f1_score(y_test, y_test_pred)
+        test_accuracy = accuracy_score(y_test, y_test_pred)
+        test_recall = recall_score(y_test, y_test_pred)
+        test_precision = precision_score(y_test, y_test_pred)
 
         mlflow.log_metrics({
-            'f1_score': f1,
-            'accuracy': accuracy,
-            'recall': recall,
-            'precision': precision
+            'train_f1_score': train_f1,
+            'train_accuracy': train_accuracy,
+            'train_recall': train_recall,
+            'train_precision': train_precision,
+            'f1_score': test_f1,
+            'accuracy': test_accuracy,
+            'recall': test_recall,
+            'precision': test_precision
         })
         mlflow.sklearn.log_model(classification_pipeline, config.MODEL_NAME, registered_model_name=config.MODEL_NAME)
 
-    return {'loss': 1 - f1, 'status': STATUS_OK}
+    # Use TEST F1 for optimization (not train F1!)
+    return {'loss': 1 - test_f1, 'status': STATUS_OK}
 
 
 # ── Run ────────────────────────────────────────────────────────────────────
@@ -173,3 +225,51 @@ if __name__ == "__main__":
     print("\nRunning XGBoost hyperparameter tuning (5 trials)...")
     best_params = fmin(fn=objective, space=search_space, algo=tpe.suggest, max_evals=5, trials=trials)
     print("\nBest XGBoost hyperparameters:", best_params)
+    
+    # ── Tag Best Model ─────────────────────────────────────────────────────────
+    print("\n🏆 Identifying and tagging best model...")
+    
+    try:
+        # Get all runs from this experiment
+        experiment = mlflow.get_experiment_by_name(config.EXPERIMENT_NAME)
+        if experiment:
+            runs_df = mlflow.search_runs(
+                experiment_ids=[experiment.experiment_id],
+                order_by=['metrics.f1_score DESC'],
+                max_results=10
+            )
+            
+            if not runs_df.empty:
+                # Get the best run
+                best_run = runs_df.iloc[0]
+                best_run_id = best_run['run_id']
+                best_f1 = best_run.get('metrics.f1_score', 0)
+                best_model_type = best_run.get('params.model_type', 'Unknown')
+                
+                # Tag the best model
+                with mlflow.start_run(run_id=best_run_id):
+                    mlflow.set_tag("model_status", "BEST_MODEL")
+                    mlflow.set_tag("best_model_timestamp", datetime.now().strftime("%Y-%m-%d_%H:%M:%S"))
+                    mlflow.set_tag("selection_criteria", "highest_f1_score")
+                
+                print(f"✅ Tagged best model: {best_model_type} (F1: {best_f1:.4f}) - Run ID: {best_run_id[:8]}")
+                
+                # Remove "BEST_MODEL" tag from other runs (keep only one best)
+                for _, run in runs_df.iloc[1:].iterrows():
+                    try:
+                        with mlflow.start_run(run_id=run['run_id']):
+                            mlflow.set_tag("model_status", "")  # Clear the tag
+                    except:
+                        pass  # Ignore errors for old runs
+                        
+                print(f"🧹 Cleared best model tags from {len(runs_df)-1} other runs")
+                
+            else:
+                print("❌ No runs found to tag")
+        else:
+            print(f"❌ Experiment '{config.EXPERIMENT_NAME}' not found")
+            
+    except Exception as e:
+        print(f"⚠️ Error tagging best model: {e}")
+        
+    print("\n🎉 Training pipeline completed!")

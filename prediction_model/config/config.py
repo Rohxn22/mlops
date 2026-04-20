@@ -30,7 +30,7 @@ FEATURES_TO_ENCODE = ['occupation_status', 'product_type', 'loan_intent']
 # MLflow — reuse same server, separate experiment
 TRACKING_URI    = "http://ec2-13-63-102-32.eu-north-1.compute.amazonaws.com:5000/"
 EXPERIMENT_NAME = "loan_prediction_v2"
-MODEL_NAME      = "Loanprediction-model-v2"
+MODEL_NAME      = "Loanprediction-model"
 
 S3_BUCKET = "mlops-dataset-792633646256-eu-north-1-an"
 FOLDER    = "datadrift_v2"

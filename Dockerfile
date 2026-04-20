@@ -52,9 +52,9 @@ COPY --from=builder /app/main.py .
 COPY --from=builder /app/static ./static
 
 # Copy only runtime prediction code (not training code)
+COPY --from=builder /app/prediction_model/__init__.py ./prediction_model/
+COPY --from=builder /app/prediction_model/predict.py ./prediction_model/
 COPY --from=builder /app/prediction_model/config ./prediction_model/config
-COPY --from=builder /app/prediction_model/predict.py ./prediction_model/predict.py
-COPY --from=builder /app/prediction_model/__init__.py ./prediction_model/__init__.py
 
 # Copy optimized runtime requirements
 COPY requirements-runtime.txt .

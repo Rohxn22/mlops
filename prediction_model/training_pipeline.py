@@ -227,43 +227,49 @@ if __name__ == "__main__":
     print("\nBest XGBoost hyperparameters:", best_params)
     
     # ── Tag Best Model ─────────────────────────────────────────────────────────
-    print("\n🏆 Identifying and tagging best model...")
+    print("\n🏆 Identifying and tagging best model from ALL runs...")
     
     try:
-        # Get all runs from this experiment
+        # Get all runs from this experiment (not just current training session)
         experiment = mlflow.get_experiment_by_name(config.EXPERIMENT_NAME)
         if experiment:
+            # Search ALL runs in the experiment, not just recent ones
             runs_df = mlflow.search_runs(
                 experiment_ids=[experiment.experiment_id],
                 order_by=['metrics.f1_score DESC'],
-                max_results=10
+                max_results=1000  # Get all runs to find the absolute best
             )
             
             if not runs_df.empty:
-                # Get the best run
+                # Get the absolute best run across all time
                 best_run = runs_df.iloc[0]
                 best_run_id = best_run['run_id']
                 best_f1 = best_run.get('metrics.f1_score', 0)
                 best_model_type = best_run.get('params.model_type', 'Unknown')
+                best_timestamp = best_run['start_time']
                 
-                # Tag the best model
-                with mlflow.start_run(run_id=best_run_id):
-                    mlflow.set_tag("model_status", "BEST_MODEL")
-                    mlflow.set_tag("best_model_timestamp", datetime.now().strftime("%Y-%m-%d_%H:%M:%S"))
-                    mlflow.set_tag("selection_criteria", "highest_f1_score")
-                
-                print(f"✅ Tagged best model: {best_model_type} (F1: {best_f1:.4f}) - Run ID: {best_run_id[:8]}")
-                
-                # Remove "BEST_MODEL" tag from other runs (keep only one best)
-                for _, run in runs_df.iloc[1:].iterrows():
+                # Clear all existing "BEST_MODEL" tags first
+                print(f"🧹 Clearing existing BEST_MODEL tags from all runs...")
+                for _, run in runs_df.iterrows():
                     try:
                         with mlflow.start_run(run_id=run['run_id']):
                             mlflow.set_tag("model_status", "")  # Clear the tag
                     except:
                         pass  # Ignore errors for old runs
-                        
-                print(f"🧹 Cleared best model tags from {len(runs_df)-1} other runs")
                 
+                # Tag the absolute best model
+                with mlflow.start_run(run_id=best_run_id):
+                    mlflow.set_tag("model_status", "BEST_MODEL")
+                    mlflow.set_tag("best_model_timestamp", datetime.now().strftime("%Y-%m-%d_%H:%M:%S"))
+                    mlflow.set_tag("selection_criteria", "highest_f1_score_all_time")
+                    mlflow.set_tag("selected_from_runs", len(runs_df))
+                
+                print(f"✅ Tagged ABSOLUTE best model from {len(runs_df)} total runs:")
+                print(f"   Model: {best_model_type}")
+                print(f"   F1 Score: {best_f1:.4f}")
+                print(f"   Run ID: {best_run_id[:8]}")
+                print(f"   Trained: {best_timestamp}")
+                        
             else:
                 print("❌ No runs found to tag")
         else:

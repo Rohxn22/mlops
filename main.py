@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import io
 import boto3
+import os
 from datetime import datetime
 import mlflow
 from prometheus_fastapi_instrumentator import Instrumentator
@@ -67,12 +68,63 @@ class LoanPrediction(BaseModel):
     debt_to_income_ratio: float
 
 
+@app.get("/health")
+def health_check():
+    try:
+        # Test MLflow connection
+        mlflow.set_tracking_uri(config.TRACKING_URI)
+        
+        # Check if target experiment exists
+        experiment = mlflow.get_experiment_by_name(config.EXPERIMENT_NAME)
+        if experiment:
+            mlflow_status = f"OK - Experiment '{config.EXPERIMENT_NAME}' found (ID: {experiment.experiment_id})"
+            
+            # Check for runs in the experiment
+            runs_df = mlflow.search_runs(experiment_ids=[experiment.experiment_id], max_results=5)
+            runs_count = len(runs_df)
+            mlflow_status += f" - {runs_count} runs found"
+        else:
+            mlflow_status = f"Warning - Experiment '{config.EXPERIMENT_NAME}' not found, checking default experiment"
+            
+            # Check default experiment (Training runs)
+            runs_df = mlflow.search_runs(experiment_ids=["0"], max_results=5)
+            runs_count = len(runs_df)
+            mlflow_status += f" - {runs_count} runs in default experiment"
+            
+    except Exception as e:
+        mlflow_status = f"Error: {str(e)}"
+    
+    # Test local model file
+    local_model_path = os.path.join(config.PACKAGE_ROOT, 'trained_models', 'loan_model_v2.pkl')
+    local_model_status = "OK" if os.path.exists(local_model_path) else "Not found"
+    
+    # Test prediction function
+    try:
+        from prediction_model.predict import _load_best_model
+        model = _load_best_model()
+        prediction_status = "OK - Model loaded successfully"
+    except Exception as e:
+        prediction_status = f"Error: {str(e)}"
+    
+    return {
+        "status": "healthy",
+        "mlflow": mlflow_status,
+        "local_model": local_model_status,
+        "prediction_service": prediction_status,
+        "config": {
+            "tracking_uri": config.TRACKING_URI,
+            "experiment_name": config.EXPERIMENT_NAME,
+            "model_name": config.MODEL_NAME
+        }
+    }
+
+
 @app.get("/")
 def index():
     return FileResponse("static/index.html")
 
 
-@app.post("/prediction_api")
+@app.post("/predict")
 def predict(loan_details: LoanPrediction):
     data = loan_details.model_dump()
     prediction = generate_predictions([data])["prediction"][0]

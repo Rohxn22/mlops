@@ -8,21 +8,53 @@ import mlflow
 
 def _load_best_model():
     """Fetches the best model from MLflow based on highest F1 score."""
-    experiment = mlflow.get_experiment_by_name(config.EXPERIMENT_NAME)
-    if experiment is None:
-        raise ValueError(f"Experiment '{config.EXPERIMENT_NAME}' not found")
+    mlflow.set_tracking_uri(config.TRACKING_URI)
     
+    # Try to get the specific experiment first
+    experiment = mlflow.get_experiment_by_name(config.EXPERIMENT_NAME)
+    
+    if experiment is None:
+        print(f"Warning: Experiment '{config.EXPERIMENT_NAME}' not found. Checking default experiment...")
+        # Fallback: search in default experiment (ID=0) where "Training runs" are
+        experiment_ids = ["0"]
+    else:
+        experiment_ids = [experiment.experiment_id]
+    
+    # Search for runs with the model
     runs_df = mlflow.search_runs(
-        experiment_ids=experiment.experiment_id,
-        order_by=['metrics.f1_score DESC']
+        experiment_ids=experiment_ids,
+        order_by=['metrics.f1_score DESC'],
+        max_results=50
     )
     
     if runs_df.empty:
-        raise ValueError(f"No runs found in experiment '{config.EXPERIMENT_NAME}'")
+        # Final fallback: try to load local model file
+        local_model_path = os.path.join(config.PACKAGE_ROOT, 'trained_models', 'loan_model_v2.pkl')
+        if os.path.exists(local_model_path):
+            print(f"Warning: No MLflow runs found. Loading local model: {local_model_path}")
+            return joblib.load(local_model_path)
+        else:
+            raise ValueError(f"No runs found in any experiment and no local model at {local_model_path}")
     
-    best_run_id = runs_df.iloc[0]['run_id']
-    model_uri = f'runs:/{best_run_id}{config.MODEL_NAME}'
-    return mlflow.sklearn.load_model(model_uri)
+    # Find the best run with the model
+    for _, run in runs_df.iterrows():
+        try:
+            run_id = run['run_id']
+            model_uri = f'runs:/{run_id}/{config.MODEL_NAME}'
+            model = mlflow.sklearn.load_model(model_uri)
+            print(f"Successfully loaded model from run: {run_id}")
+            return model
+        except Exception as e:
+            print(f"Failed to load model from run {run_id}: {e}")
+            continue
+    
+    # If all MLflow attempts fail, try local model
+    local_model_path = os.path.join(config.PACKAGE_ROOT, 'trained_models', 'loan_model_v2.pkl')
+    if os.path.exists(local_model_path):
+        print(f"Warning: All MLflow models failed. Loading local model: {local_model_path}")
+        return joblib.load(local_model_path)
+    
+    raise ValueError("Could not load any model from MLflow or local storage")
 
 
 def generate_predictions(data_input):

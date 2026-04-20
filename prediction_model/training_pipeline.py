@@ -74,6 +74,13 @@ def train_baseline():
         ('LogisticRegression', LogisticRegression(max_iter=1000))
     ])
 
+    # Ensure experiment exists
+    try:
+        mlflow.create_experiment(config.EXPERIMENT_NAME)
+        print(f"Created experiment: {config.EXPERIMENT_NAME}")
+    except Exception:
+        print(f"Experiment {config.EXPERIMENT_NAME} already exists or couldn't be created")
+    
     mlflow.set_experiment(config.EXPERIMENT_NAME)
     run_tag = datetime.now().strftime("%m%d-%H%M")
 
@@ -127,6 +134,13 @@ def objective(params):
     classification_pipeline = Pipeline(build_preprocessing() + [('XGBoostClassifier', clf)])
 
     mlflow.xgboost.autolog()
+    
+    # Ensure experiment exists
+    try:
+        mlflow.create_experiment(config.EXPERIMENT_NAME)
+    except Exception:
+        pass  # Experiment already exists
+    
     mlflow.set_experiment(config.EXPERIMENT_NAME)
     run_tag = datetime.now().strftime("%m%d-%H%M")
     run_name = f"xgboost-trial-{len(trials.trials) + 1}-{run_tag}"

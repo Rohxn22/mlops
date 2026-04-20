@@ -19,8 +19,8 @@ RUN chmod +x /app/tests && \
     chmod +w /app/prediction_model/trained_models && \
     chmod +w /app/prediction_model/datasets
 
-# Install DVC with compatible dependencies first
-RUN pip install --no-cache-dir "dvc[s3]==3.48.4" "boto3>=1.34.0,<1.35.0" "botocore>=1.34.0,<1.35.0"
+# Install DVC with latest compatible version
+RUN pip install --no-cache-dir "dvc[s3]>=3.50.0"
 
 # Then install our requirements
 RUN pip install --no-cache-dir -r requirements.txt

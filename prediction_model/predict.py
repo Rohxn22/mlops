@@ -70,8 +70,8 @@ def _load_best_model():
             run_id = run['run_id']
             print(f"🔍 Trying to load from run: {run_id[:8]}")
             
-            # Try different artifact paths that we use in training
-            artifact_paths = ["trained_model", "model"]
+            # Try the artifact path we actually use in training
+            artifact_paths = ["trained_model"]  # Only try the path that exists
             
             for artifact_path in artifact_paths:
                 try:

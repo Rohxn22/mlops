@@ -1,10 +1,11 @@
 # Runtime-only dependencies for FastAPI prediction service
-# Excludes training dependencies like hyperopt, xgboost, pytest
+# Excludes training dependencies like hyperopt, pytest
 
 # Core ML Libraries (minimal)
 numpy>=1.26
 pandas>=2.0
 scikit-learn>=1.4
+xgboost>=2.0
 joblib
 
 # MLflow for Model Loading

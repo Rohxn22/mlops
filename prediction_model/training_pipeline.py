@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from datetime import datetime
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import f1_score, accuracy_score, recall_score, precision_score
 from sklearn.linear_model import LogisticRegression
@@ -43,7 +44,8 @@ def train_baseline():
     ])
 
     mlflow.set_experiment("loan_prediction_model")
-    with mlflow.start_run(run_name="baseline-logistic-regression"):
+    run_tag = datetime.now().strftime("%m%d-%H%M")
+    with mlflow.start_run(run_name=f"baseline-lr-{run_tag}"):
         baseline_pipeline.fit(X_train, y_train)
         y_pred = baseline_pipeline.predict(X_test)
 
@@ -107,8 +109,8 @@ def objective(params):
 
     mlflow.xgboost.autolog()
     mlflow.set_experiment("loan_prediction_model")
-    trial_number = len(trials.trials) + 1
-    run_name = f"xgboost-trial-{trial_number}"
+    run_tag = datetime.now().strftime("%m%d-%H%M")
+    run_name = f"xgboost-trial-{len(trials.trials) + 1}-{run_tag}"
 
     with mlflow.start_run(nested=True, run_name=run_name):
         classification_pipeline.fit(X_train, y_train)

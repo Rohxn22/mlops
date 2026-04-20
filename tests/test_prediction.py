@@ -1,7 +1,7 @@
 import pytest
 import mlflow
+import pandas as pd
 from prediction_model.config import config
-from prediction_model.processing.data_handling import load_dataset
 from prediction_model.predict import generate_predictions
 
 mlflow.set_tracking_uri(config.TRACKING_URI)
@@ -9,9 +9,25 @@ mlflow.set_tracking_uri(config.TRACKING_URI)
 
 @pytest.fixture
 def single_prediction():
-    test_dataset = load_dataset(config.TEST_FILE)
-    single_row = test_dataset[config.FEATURES][:1]
-    return generate_predictions(single_row)
+    # Create sample data with new features
+    sample_data = pd.DataFrame([{
+        'age': 35,
+        'occupation_status': 'Employed',
+        'years_employed': 8.5,
+        'annual_income': 75000,
+        'credit_score': 720,
+        'credit_history_years': 12.0,
+        'savings_assets': 25000,
+        'current_debt': 15000,
+        'defaults_on_file': 0,
+        'delinquencies_last_2yrs': 1,
+        'derogatory_marks': 0,
+        'product_type': 'Personal',
+        'loan_intent': 'debt_consolidation',
+        'loan_amount': 50000,
+        'debt_to_income_ratio': 0.35
+    }])
+    return generate_predictions(sample_data)
 
 
 def test_single_pred_not_none(single_prediction):

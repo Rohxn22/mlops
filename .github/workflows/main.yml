@@ -29,7 +29,10 @@ jobs:
     - name: Install DVC and pull data
       run: |
         pip install "dvc[s3]"
-        dvc pull prediction_model/datasets/loan_data_part_2.csv.dvc --force
+        # Get dataset filename directly from config
+        DATASET_FILE=$(python -c "import sys; sys.path.append('.'); from prediction_model.config.config import DATASET_FILE; print(DATASET_FILE)")
+        echo "Pulling dataset: $DATASET_FILE"
+        dvc pull prediction_model/datasets/${DATASET_FILE}.dvc --force
 
     - name: Login to Docker Hub
       uses: docker/login-action@v3

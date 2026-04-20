@@ -28,7 +28,10 @@ ENV PYTHONPATH="/app:/app/prediction_model"
 ENV GIT_PYTHON_REFRESH=quiet
 
 # Copy dataset (should be pulled by CI before Docker build)
-COPY prediction_model/datasets/loan_data_part_2.csv /app/prediction_model/datasets/
+# Get dataset filename directly from config
+RUN DATASET_FILE=$(python -c "from prediction_model.config.config import DATASET_FILE; print(DATASET_FILE)") && \
+    echo "Using dataset from config: $DATASET_FILE" && \
+    cp prediction_model/datasets/$DATASET_FILE /app/prediction_model/datasets/
 
 # Train model (logs to MLflow)
 RUN python /app/prediction_model/training_pipeline.py

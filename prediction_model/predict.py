@@ -27,6 +27,8 @@ def _load_best_model():
         max_results=50
     )
     
+    print(f"🔍 Debug: Found {len(runs_df)} runs in experiment")
+    
     if runs_df.empty:
         # Final fallback: try to load local model file
         local_model_path = os.path.join(config.PACKAGE_ROOT, 'trained_models', 'loan_model_v2.pkl')
@@ -35,6 +37,10 @@ def _load_best_model():
             return joblib.load(local_model_path)
         else:
             raise ValueError(f"No runs found in any experiment and no local model at {local_model_path}")
+    
+    # Debug: Print run info
+    for i, (_, run) in enumerate(runs_df.head(3).iterrows()):
+        print(f"🔍 Run {i+1}: {run['run_id'][:8]} - F1: {run.get('metrics.f1_score', 'N/A')} - Status: {run.get('status', 'N/A')}")
     
     # Prioritize models tagged as "BEST_MODEL"
     best_tagged_runs = runs_df[runs_df['tags.model_status'] == 'BEST_MODEL']
@@ -49,21 +55,24 @@ def _load_best_model():
     for _, run in runs_to_try.iterrows():
         try:
             run_id = run['run_id']
+            print(f"🔍 Trying to load from run: {run_id[:8]}")
+            
             # Try different artifact paths that we use in training
             artifact_paths = ["trained_model", "model"]
             
             for artifact_path in artifact_paths:
                 try:
                     model_uri = f'runs:/{run_id}/{artifact_path}'
+                    print(f"   Trying artifact path: {artifact_path}")
                     model = mlflow.sklearn.load_model(model_uri)
-                    print(f"Successfully loaded model from run: {run_id} (artifact: {artifact_path})")
+                    print(f"✅ Successfully loaded model from run: {run_id[:8]} (artifact: {artifact_path})")
                     return model
                 except Exception as e:
-                    print(f"Failed to load from {artifact_path}: {e}")
+                    print(f"   ❌ Failed to load from {artifact_path}: {str(e)[:100]}")
                     continue
                     
         except Exception as e:
-            print(f"Failed to load model from run {run_id}: {e}")
+            print(f"❌ Failed to load model from run {run_id[:8]}: {e}")
             continue
     
     # If all MLflow attempts fail, try local model

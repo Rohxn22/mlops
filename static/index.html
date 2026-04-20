@@ -400,7 +400,7 @@
               <option value="">Select</option>
               <option>Employed</option>
               <option>Self-Employed</option>
-              <option>Unemployed</option>
+              <option>Student</option>
             </select>
           </div>
           <div class="field">
@@ -474,11 +474,9 @@
             <label>Product Type</label>
             <select name="product_type" required>
               <option value="">Select</option>
-              <option>Personal</option>
-              <option>Auto</option>
-              <option>Home</option>
-              <option>Business</option>
-              <option>Education</option>
+              <option>Credit Card</option>
+              <option>Personal Loan</option>
+              <option>Line of Credit</option>
             </select>
           </div>
           <div class="field">
@@ -486,13 +484,12 @@
             <span class="hint">Purpose of the loan</span>
             <select name="loan_intent" required>
               <option value="">Select</option>
-              <option>debt_consolidation</option>
-              <option>home_improvement</option>
-              <option>major_purchase</option>
-              <option>medical</option>
-              <option>vacation</option>
-              <option>wedding</option>
-              <option>other</option>
+              <option>Personal</option>
+              <option>Education</option>
+              <option>Medical</option>
+              <option>Business</option>
+              <option>Home Improvement</option>
+              <option>Debt Consolidation</option>
             </select>
           </div>
         </div>
@@ -518,6 +515,10 @@
         credit_history_years · savings_assets · current_debt · defaults_on_file ·
         delinquencies_last_2yrs · derogatory_marks · product_type · loan_intent ·
         loan_amount · debt_to_income_ratio<br><br>
+        <span>Valid values:</span><br>
+        • <strong>occupation_status:</strong> Employed, Self-Employed, Student<br>
+        • <strong>product_type:</strong> Credit Card, Personal Loan, Line of Credit<br>
+        • <strong>loan_intent:</strong> Personal, Education, Medical, Business, Home Improvement, Debt Consolidation<br><br>
         <span>Note:</span> debt_to_income_ratio can be calculated as (current_debt ÷ annual_income)
       </div>
 

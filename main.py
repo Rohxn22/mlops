@@ -9,6 +9,7 @@ import pandas as pd
 import io
 import boto3
 from datetime import datetime
+import mlflow
 from prometheus_fastapi_instrumentator import Instrumentator
 from prediction_model.predict import generate_predictions, generate_predictions_batch
 from prediction_model.config import config
@@ -25,6 +26,9 @@ def upload_to_s3(file_content, filename):
     s3_key = f"{folder_path}/{filename_with_datetime}"
     s3.put_object(Bucket=config.S3_BUCKET, Key=s3_key, Body=file_content)
     return s3_key
+
+
+mlflow.set_tracking_uri(config.TRACKING_URI)
 
 
 app = FastAPI(

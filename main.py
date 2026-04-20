@@ -9,7 +9,6 @@ import pandas as pd
 import io
 import boto3
 from datetime import datetime
-import mlflow
 from prometheus_fastapi_instrumentator import Instrumentator
 from prediction_model.predict import generate_predictions, generate_predictions_batch
 from prediction_model.config import config
@@ -28,12 +27,10 @@ def upload_to_s3(file_content, filename):
     return s3_key
 
 
-mlflow.set_tracking_uri(config.TRACKING_URI)
-
 app = FastAPI(
-    title="Loan Prediction App using FastAPI - MLOps",
-    description="MLOps Demo",
-    version='1.0'
+    title="Loan Prediction App V2 - MLOps",
+    description="Enhanced loan prediction with rich feature set",
+    version='2.0'
 )
 
 app.add_middleware(
@@ -45,22 +42,25 @@ app.add_middleware(
 )
 
 Instrumentator().instrument(app).expose(app)
-
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
 class LoanPrediction(BaseModel):
-    Gender: str
-    Married: str
-    Dependents: str
-    Education: str
-    Self_Employed: str
-    ApplicantIncome: float
-    CoapplicantIncome: float
-    LoanAmount: float
-    Loan_Amount_Term: float
-    Credit_History: float
-    Property_Area: str
+    age: int
+    occupation_status: str
+    years_employed: float
+    annual_income: int
+    credit_score: int
+    credit_history_years: float
+    savings_assets: int
+    current_debt: int
+    defaults_on_file: int
+    delinquencies_last_2yrs: int
+    derogatory_marks: int
+    product_type: str
+    loan_intent: str
+    loan_amount: int
+    debt_to_income_ratio: float
 
 
 @app.get("/")
@@ -78,18 +78,39 @@ def predict(loan_details: LoanPrediction):
 
 @app.post("/prediction_ui")
 def predict_gui(
-    Gender: str, Married: str, Dependents: str, Education: str,
-    Self_Employed: str, ApplicantIncome: float, CoapplicantIncome: float,
-    LoanAmount: float, Loan_Amount_Term: float, Credit_History: float,
-    Property_Area: str
+    age: int,
+    occupation_status: str,
+    years_employed: float,
+    annual_income: int,
+    credit_score: int,
+    credit_history_years: float,
+    savings_assets: int,
+    current_debt: int,
+    defaults_on_file: int,
+    delinquencies_last_2yrs: int,
+    derogatory_marks: int,
+    product_type: str,
+    loan_intent: str,
+    loan_amount: int,
+    debt_to_income_ratio: float
 ):
-    cols = ['Gender', 'Married', 'Dependents', 'Education', 'Self_Employed',
-            'ApplicantIncome', 'CoapplicantIncome', 'LoanAmount',
-            'Loan_Amount_Term', 'Credit_History', 'Property_Area']
-    input_data = [Gender, Married, Dependents, Education, Self_Employed,
-                  ApplicantIncome, CoapplicantIncome, LoanAmount,
-                  Loan_Amount_Term, Credit_History, Property_Area]
-    data_dict = dict(zip(cols, input_data))
+    data_dict = {
+        'age': age,
+        'occupation_status': occupation_status,
+        'years_employed': years_employed,
+        'annual_income': annual_income,
+        'credit_score': credit_score,
+        'credit_history_years': credit_history_years,
+        'savings_assets': savings_assets,
+        'current_debt': current_debt,
+        'defaults_on_file': defaults_on_file,
+        'delinquencies_last_2yrs': delinquencies_last_2yrs,
+        'derogatory_marks': derogatory_marks,
+        'product_type': product_type,
+        'loan_intent': loan_intent,
+        'loan_amount': loan_amount,
+        'debt_to_income_ratio': debt_to_income_ratio
+    }
     prediction = generate_predictions([data_dict])["prediction"][0]
     pred = "Approved" if prediction == "Y" else "Rejected"
     return {"status": pred}
@@ -99,12 +120,19 @@ def predict_gui(
 async def batch_predict(file: UploadFile = File(...)):
     content = await file.read()
     df = pd.read_csv(io.BytesIO(content), index_col=False)
-    if not all(col in df.columns for col in config.FEATURES):
-        return {"error": "CSV file does not contain the required columns."}
+    
+    # Check if all required features are present
+    missing_cols = set(config.FEATURES) - set(df.columns)
+    if missing_cols:
+        return {"error": f"CSV file missing required columns: {list(missing_cols)}"}
+    
     predictions = generate_predictions_batch(df)["prediction"]
     df['Prediction'] = predictions
     result = df.to_csv(index=False)
+    
+    # Upload to S3
     upload_to_s3(result.encode('utf-8'), file.filename)
+    
     return StreamingResponse(
         io.BytesIO(result.encode('utf-8')),
         media_type="text/csv",

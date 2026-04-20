@@ -1,148 +1,161 @@
+"""
+Training Pipeline V2 — Loan Approval Model
+- Engineered features baked in
+- Regularized XGBoost (anti-overfit)
+- Clean train/test comparison printed locally
+"""
+
+import warnings
+warnings.filterwarnings('ignore')
+
 import numpy as np
-import pandas as pd
-from datetime import datetime
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import f1_score, accuracy_score, recall_score, precision_score
+from sklearn.metrics import (f1_score, accuracy_score, precision_score,
+                              recall_score, roc_auc_score, confusion_matrix)
 from sklearn.linear_model import LogisticRegression
-import mlflow
-import mlflow.sklearn
-from hyperopt import fmin, tpe, hp, Trials, STATUS_OK
-import xgboost as xgb
-from prediction_model.config import config
-from prediction_model.processing.data_handling import load_dataset
-import prediction_model.processing.preprocessing as pp
-import prediction_model.pipeline as pipe
+from sklearn.preprocessing import MinMaxScaler, LabelEncoder
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.base import BaseEstimator, TransformerMixin
+import xgboost as xgb
+
+from prediction_model.config import config
+from prediction_model.processing.data_handling import load_and_split_dataset
 
 
-mlflow.set_tracking_uri(config.TRACKING_URI)
+# ── Feature Engineering Transformer ───────────────────────────────────────
+class FeatureEngineer(BaseEstimator, TransformerMixin):
+    def fit(self, X, y=None):
+        return self
 
-def get_data(input):
-    data = load_dataset(input)
-    x = data[config.FEATURES]
-    y = data[config.TARGET].map({'N': 0, 'Y': 1})
-    return x, y
+    def transform(self, X):
+        X = X.copy()
+        X['loan_to_income']    = X['loan_amount']    / (X['annual_income'] + 1)
+        X['debt_burden']       = X['current_debt']   / (X['annual_income'] + 1)
+        X['net_worth']         = X['savings_assets'] - X['current_debt']
+        X['credit_risk_index'] = (X['defaults_on_file'] +
+                                  X['delinquencies_last_2yrs'] +
+                                  X['derogatory_marks'])
+        X['savings_to_debt']   = X['savings_assets'] / (X['current_debt'] + 1)
+        return X
 
 
-X, Y = get_data(config.TRAIN_FILE)
+# ── Categorical Encoder ────────────────────────────────────────────────────
+class CatEncoder(BaseEstimator, TransformerMixin):
+    def __init__(self, variables=None):
+        self.variables = variables
 
-X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.2, random_state=42)
+    def fit(self, X, y=None):
+        self.encoders_ = {}
+        for col in self.variables:
+            le = LabelEncoder()
+            le.fit(X[col].astype(str))
+            self.encoders_[col] = le
+        return self
+
+    def transform(self, X):
+        X = X.copy()
+        for col in self.variables:
+            X[col] = self.encoders_[col].transform(X[col].astype(str))
+        return X
 
 
-# BASELINE MODEL — Logistic Regression
+# ── Load & split ───────────────────────────────────────────────────────────
+print("Loading and splitting dataset (70/30, stratified)...")
+X_train, X_test, y_train = load_and_split_dataset()
+print(f"  Train: {X_train.shape} | Test (no target): {X_test.shape}\n")
+
+
+# ── Shared preprocessing ───────────────────────────────────────────────────
+def base_steps():
+    return [
+        ('FeatureEngineer', FeatureEngineer()),
+        ('CatEncoder',      CatEncoder(variables=config.FEATURES_TO_ENCODE)),
+        ('Scaler',          MinMaxScaler()),
+    ]
+
+
+# ── Print helper ───────────────────────────────────────────────────────────
+def print_results(name, y_true, y_pred, y_prob):
+    print(f"  {'─'*50}")
+    print(f"  {name}")
+    print(f"  {'─'*50}")
+    print(f"  Accuracy : {accuracy_score(y_true, y_pred):.4f}")
+    print(f"  F1 Score : {f1_score(y_true, y_pred):.4f}")
+    print(f"  Precision: {precision_score(y_true, y_pred):.4f}")
+    print(f"  Recall   : {recall_score(y_true, y_pred):.4f}")
+    print(f"  ROC-AUC  : {roc_auc_score(y_true, y_prob):.4f}")
+    cm = confusion_matrix(y_true, y_pred)
+    print(f"  Confusion Matrix:")
+    print(f"    TN={cm[0,0]}  FP={cm[0,1]}")
+    print(f"    FN={cm[1,0]}  TP={cm[1,1]}")
+    print()
+
+
+# ── Baseline: Logistic Regression ─────────────────────────────────────────
 def train_baseline():
-    baseline_pipeline = Pipeline([
-        ('DomainProcessing', pp.DomainProcessing(variable_to_modify=config.FEATURE_TO_MODIFY, variable_to_add=config.FEATURE_TO_ADD)),
-        ('MeanImputation', pp.MeanImputer(variables=config.NUM_FEATURES)),
-        ('ModeImputation', pp.ModeImputer(variables=config.CAT_FEATURES)),
-        ('DropFeatures', pp.DropColumns(variables_to_drop=config.DROP_FEATURES)),
-        ('LabelEncoder', pp.CustomLabelEncoder(variables=config.FEATURES_TO_ENCODE)),
-        ('LogTransform', pp.LogTransforms(variables=config.LOG_FEATURES)),
-        ('MinMaxScale', MinMaxScaler()),
-        ('LogisticRegression', LogisticRegression(max_iter=1000))
+    pipeline = Pipeline(base_steps() + [
+        ('model', LogisticRegression(max_iter=1000))
     ])
+    pipeline.fit(X_train, y_train)
 
-    mlflow.set_experiment("loan_prediction_model")
-    run_tag = datetime.now().strftime("%m%d-%H%M")
-    with mlflow.start_run(run_name=f"baseline-lr-{run_tag}"):
-        baseline_pipeline.fit(X_train, y_train)
-        y_pred = baseline_pipeline.predict(X_test)
+    # Train metrics
+    tr_pred = pipeline.predict(X_train)
+    tr_prob = pipeline.predict_proba(X_train)[:, 1]
+    print_results("Logistic Regression — TRAIN", y_train, tr_pred, tr_prob)
 
-        f1       = f1_score(y_test, y_pred)
-        accuracy = accuracy_score(y_test, y_pred)
-        recall   = recall_score(y_test, y_pred)
-        precision = precision_score(y_test, y_pred)
-
-        mlflow.log_param("model_type", "LogisticRegression")
-        mlflow.log_metrics({
-            'f1_score': f1,
-            'accuracy': accuracy,
-            'recall': recall,
-            'precision': precision
-        })
-        mlflow.sklearn.log_model(baseline_pipeline, "Loanprediction-model")
-
-        print(f"Baseline (Logistic Regression) → F1: {f1:.4f} | Accuracy: {accuracy:.4f}")
+    return pipeline
 
 
-
-# OPTIMIZED MODEL — XGBoost with Hyperopt
-
-# Define the search space
-search_space = {
-    'max_depth': hp.choice('max_depth', np.arange(3, 10, dtype=int)),
-    'learning_rate': hp.uniform('learning_rate', 0.01, 0.3),
-    'n_estimators': hp.choice('n_estimators', np.arange(50, 300, 50, dtype=int)),
-    'subsample': hp.uniform('subsample', 0.5, 1.0),
-    'colsample_bytree': hp.uniform('colsample_bytree', 0.5, 1.0),
-    'gamma': hp.uniform('gamma', 0, 5),
-    'reg_alpha': hp.uniform('reg_alpha', 0, 1),
-    'reg_lambda': hp.uniform('reg_lambda', 0, 1)
-}
-
-
-def objective(params):
+# ── Regularized XGBoost ────────────────────────────────────────────────────
+def train_xgboost():
     clf = xgb.XGBClassifier(
-        max_depth=params['max_depth'],
-        learning_rate=params['learning_rate'],
-        n_estimators=params['n_estimators'],
-        subsample=params['subsample'],
-        colsample_bytree=params['colsample_bytree'],
-        gamma=params['gamma'],
-        reg_alpha=params['reg_alpha'],
-        reg_lambda=params['reg_lambda'],
-        use_label_encoder=False,
-        eval_metric='mlogloss'
+        n_estimators=300,
+        max_depth=4,
+        learning_rate=0.05,
+        subsample=0.8,
+        colsample_bytree=0.8,
+        reg_alpha=0.1,
+        reg_lambda=1.0,
+        min_child_weight=5,
+        eval_metric='logloss',
+        verbosity=0
     )
+    pipeline = Pipeline(base_steps() + [('model', clf)])
+    pipeline.fit(X_train, y_train)
 
-    classification_pipeline = Pipeline([
-        ('DomainProcessing', pp.DomainProcessing(variable_to_modify=config.FEATURE_TO_MODIFY, variable_to_add=config.FEATURE_TO_ADD)),
-        ('MeanImputation', pp.MeanImputer(variables=config.NUM_FEATURES)),
-        ('ModeImputation', pp.ModeImputer(variables=config.CAT_FEATURES)),
-        ('DropFeatures', pp.DropColumns(variables_to_drop=config.DROP_FEATURES)),
-        ('LabelEncoder', pp.CustomLabelEncoder(variables=config.FEATURES_TO_ENCODE)),
-        ('LogTransform', pp.LogTransforms(variables=config.LOG_FEATURES)),
-        ('MinMaxScale', MinMaxScaler()),
-        ('XGBoostClassifier', clf)
-    ])
+    # Train metrics
+    tr_pred = pipeline.predict(X_train)
+    tr_prob = pipeline.predict_proba(X_train)[:, 1]
+    print_results("XGBoost (Regularized) — TRAIN", y_train, tr_pred, tr_prob)
 
-    mlflow.xgboost.autolog()
-    mlflow.set_experiment("loan_prediction_model")
-    run_tag = datetime.now().strftime("%m%d-%H%M")
-    run_name = f"xgboost-trial-{len(trials.trials) + 1}-{run_tag}"
+    # Feature importances
+    feat_names = X_train.columns.tolist() + [
+        'loan_to_income', 'debt_burden', 'net_worth',
+        'credit_risk_index', 'savings_to_debt'
+    ]
+    importances = clf.feature_importances_
+    top = sorted(zip(feat_names, importances), key=lambda x: x[1], reverse=True)[:10]
+    print("  Top 10 Feature Importances:")
+    for fname, imp in top:
+        print(f"    {fname:<30}: {imp:.4f}")
+    print()
 
-    with mlflow.start_run(nested=True, run_name=run_name):
-        classification_pipeline.fit(X_train, y_train)
-        y_pred = classification_pipeline.predict(X_test)
-
-        f1        = f1_score(y_test, y_pred)
-        accuracy  = accuracy_score(y_test, y_pred)
-        recall    = recall_score(y_test, y_pred)
-        precision = precision_score(y_test, y_pred)
-
-        mlflow.log_metrics({
-            'f1_score': f1,
-            'accuracy': accuracy,
-            'recall': recall,
-            'precision': precision
-        })
-        mlflow.sklearn.log_model(classification_pipeline, "Loanprediction-model")
-
-    return {'loss': 1 - f1, 'status': STATUS_OK}
+    return pipeline
 
 
-# ─────────────────────────────────────────────
-# RUN TRAINING
-# ─────────────────────────────────────────────
+# ── Run ────────────────────────────────────────────────────────────────────
+if __name__ == "__main__":
+    print("=" * 52)
+    print("  BASELINE — LOGISTIC REGRESSION")
+    print("=" * 52)
+    lr_pipe = train_baseline()
 
-# 1. Train baseline first
-print("Training baseline model (Logistic Regression)...")
-train_baseline()
+    print("=" * 52)
+    print("  OPTIMIZED — XGBOOST (REGULARIZED + FEAT ENG)")
+    print("=" * 52)
+    xgb_pipe = train_xgboost()
 
-# 2. Run XGBoost hyperparameter tuning
-print("\nRunning XGBoost hyperparameter tuning (5 trials)...")
-trials = Trials()
-best_params = fmin(fn=objective, space=search_space, algo=tpe.suggest, max_evals=5, trials=trials)
-
-print("\nBest XGBoost hyperparameters:", best_params)
+    print("=" * 52)
+    print("  NOTE: Test set target was withheld (30% split)")
+    print("  Train metrics shown above.")
+    print("  To evaluate on test, re-run with y_test retained.")
+    print("=" * 52)

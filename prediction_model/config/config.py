@@ -5,31 +5,32 @@ PACKAGE_ROOT = os.path.dirname(current_directory)
 
 DATAPATH = os.path.join(PACKAGE_ROOT, "datasets")
 
-TRAIN_FILE = 'train.csv'
-TEST_FILE  = 'test.csv'
+# Single source dataset — will be split 70/30 in data_handling_v2
+DATASET_FILE = 'loan_data_part_1.csv'
 
-TARGET = 'Loan_Status'
+TARGET = 'loan_status'
 
-FEATURES = ['Gender', 'Married', 'Dependents', 'Education',
-            'Self_Employed', 'ApplicantIncome', 'CoapplicantIncome',
-            'LoanAmount', 'Loan_Amount_Term', 'Credit_History', 'Property_Area']
+FEATURES = [
+    'age', 'occupation_status', 'years_employed', 'annual_income',
+    'credit_score', 'credit_history_years', 'savings_assets', 'current_debt',
+    'defaults_on_file', 'delinquencies_last_2yrs', 'derogatory_marks',
+    'product_type', 'loan_intent', 'loan_amount', 'debt_to_income_ratio'
+]
 
-NUM_FEATURES = ['ApplicantIncome', 'LoanAmount', 'Loan_Amount_Term']
+NUM_FEATURES = [
+    'years_employed', 'annual_income', 'credit_score', 'credit_history_years',
+    'savings_assets', 'current_debt', 'loan_amount', 'debt_to_income_ratio',
+    'age', 'defaults_on_file', 'delinquencies_last_2yrs', 'derogatory_marks'
+]
 
-CAT_FEATURES = ['Gender', 'Married', 'Dependents', 'Education',
-                'Self_Employed', 'Credit_History', 'Property_Area']
+CAT_FEATURES = ['occupation_status', 'product_type', 'loan_intent']
 
-FEATURES_TO_ENCODE = ['Gender', 'Married', 'Dependents', 'Education',
-                      'Self_Employed', 'Credit_History', 'Property_Area']
+FEATURES_TO_ENCODE = ['occupation_status', 'product_type', 'loan_intent']
 
-FEATURE_TO_MODIFY = ['ApplicantIncome']
-FEATURE_TO_ADD    = 'CoapplicantIncome'
-DROP_FEATURES     = ['CoapplicantIncome']
-LOG_FEATURES      = ['ApplicantIncome', 'LoanAmount']
-
-S3_BUCKET    = "mlops-dataset-792633646256-eu-north-1-an"
-FOLDER       = "datadrift"
-
+# MLflow — reuse same server, separate experiment
 TRACKING_URI    = "http://ec2-13-63-102-32.eu-north-1.compute.amazonaws.com:5000/"
-EXPERIMENT_NAME = "loan_prediction_model"
-MODEL_NAME      = "/Loanprediction-model"
+EXPERIMENT_NAME = "loan_prediction_v2"
+MODEL_NAME      = "Loanprediction-model-v2"
+
+S3_BUCKET = "mlops-dataset-792633646256-eu-north-1-an"
+FOLDER    = "datadrift_v2"

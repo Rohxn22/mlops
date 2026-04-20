@@ -1,94 +1,56 @@
-from sklearn.base import BaseEstimator,TransformerMixin
-from prediction_model.config import config
+"""
+Preprocessing transformers for the new loan dataset
+Includes feature engineering and categorical encoding
+"""
+
+from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.preprocessing import LabelEncoder
 import numpy as np
 
-class MeanImputer(BaseEstimator,TransformerMixin):
-    def __init__(self,variables=None):
-        self.variables = variables
+
+class FeatureEngineer(BaseEstimator, TransformerMixin):
+    """
+    Creates engineered features from raw loan data:
+    - loan_to_income: loan amount relative to annual income
+    - debt_burden: current debt relative to annual income  
+    - net_worth: savings minus current debt
+    - credit_risk_index: sum of negative credit events
+    - savings_to_debt: savings relative to debt (financial cushion)
+    """
     
-    def fit(self,X,y=None):
-        self.mean_dict = {}
-        for col in self.variables:
-            self.mean_dict[col] = X[col].mean()
+    def fit(self, X, y=None):
         return self
     
-    def transform(self,X):
+    def transform(self, X):
         X = X.copy()
-        for col in self.variables:
-            X[col].fillna(self.mean_dict[col],inplace=True)
+        X['loan_to_income']    = X['loan_amount']    / (X['annual_income'] + 1)
+        X['debt_burden']       = X['current_debt']   / (X['annual_income'] + 1)
+        X['net_worth']         = X['savings_assets'] - X['current_debt']
+        X['credit_risk_index'] = (X['defaults_on_file'] +
+                                  X['delinquencies_last_2yrs'] +
+                                  X['derogatory_marks'])
+        X['savings_to_debt']   = X['savings_assets'] / (X['current_debt'] + 1)
         return X
 
 
-class ModeImputer(BaseEstimator,TransformerMixin):
-    def __init__(self,variables=None):
-        self.variables = variables
+class CategoricalEncoder(BaseEstimator, TransformerMixin):
+    """
+    Label encodes categorical variables using frequency-based ordering
+    """
     
-    def fit(self,X,y=None):
-        self.mode_dict = {}
-        for col in self.variables:
-            self.mode_dict[col] = X[col].mode()[0]
-        return self
-    
-    def transform(self,X):
-        X = X.copy()
-        for col in self.variables:
-            X[col].fillna(self.mode_dict[col],inplace=True)
-        return X
-
-class DropColumns(BaseEstimator,TransformerMixin):
-    def __init__(self,variables_to_drop=None):
-        self.variables_to_drop = variables_to_drop
-    
-    def fit(self,X,y=None):
-        return self
-    
-    def transform(self,X):
-        X = X.copy()
-        X = X.drop(columns = self.variables_to_drop)
-        return X
-
-class DomainProcessing(BaseEstimator,TransformerMixin):
-    def __init__(self,variable_to_modify = None, variable_to_add = None):
-        self.variable_to_modify = variable_to_modify
-        self.variable_to_add = variable_to_add
-    
-    def fit(self,X,y=None):
-        return self
-    
-    def transform(self,X):
-        X = X.copy()
-        for feature in self.variable_to_modify:
-            X[feature] = X[feature] + X[self.variable_to_add]
-        return X
-
-class CustomLabelEncoder(BaseEstimator,TransformerMixin):
     def __init__(self, variables=None):
-        self.variables=variables
-    
-    def fit(self, X,y=None):
-        self.label_dict = {}
-        for var in self.variables:
-            t = X[var].value_counts().sort_values(ascending=True).index 
-            self.label_dict[var] = {k:i for i,k in enumerate(t,0)}
-        return self
-    
-    def transform(self,X):
-        X=X.copy()
-        for feature in self.variables:
-            X[feature] = X[feature].map(self.label_dict[feature])
-        return X
-
-
-# Try out Log Transformation
-class LogTransforms(BaseEstimator,TransformerMixin):
-    def __init__(self,variables=None):
         self.variables = variables
     
-    def fit(self,X,y=None):
+    def fit(self, X, y=None):
+        self.encoders_ = {}
+        for col in self.variables:
+            le = LabelEncoder()
+            le.fit(X[col].astype(str))
+            self.encoders_[col] = le
         return self
     
-    def transform(self,X):
+    def transform(self, X):
         X = X.copy()
         for col in self.variables:
-            X[col] = np.log(X[col])
+            X[col] = self.encoders_[col].transform(X[col].astype(str))
         return X

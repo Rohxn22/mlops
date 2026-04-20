@@ -5,33 +5,121 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Loan Prediction V2</title>
   <style>
+    :root {
+      /* Dark theme (default) */
+      --bg-primary: #0a0a0a;
+      --bg-secondary: #111;
+      --bg-tertiary: #0d0d0d;
+      --border-primary: #1e1e1e;
+      --border-secondary: #222;
+      --border-hover: #444;
+      --text-primary: #e0e0e0;
+      --text-secondary: #555;
+      --text-tertiary: #444;
+      --text-accent: #fff;
+      --input-bg: #0a0a0a;
+      --card-bg: #111;
+      --button-bg: #fff;
+      --button-text: #000;
+      --button-hover: #e0e0e0;
+      --success-color: #4caf50;
+      --error-color: #f44336;
+      --success-border: #1a3a1a;
+      --error-border: #3a1a1a;
+    }
+
+    [data-theme="light"] {
+      /* Light theme */
+      --bg-primary: #f5f5f5;
+      --bg-secondary: #ffffff;
+      --bg-tertiary: #f9f9f9;
+      --border-primary: #e0e0e0;
+      --border-secondary: #d0d0d0;
+      --border-hover: #999;
+      --text-primary: #333;
+      --text-secondary: #666;
+      --text-tertiary: #999;
+      --text-accent: #000;
+      --input-bg: #ffffff;
+      --card-bg: #ffffff;
+      --button-bg: #333;
+      --button-text: #fff;
+      --button-hover: #555;
+      --success-color: #2e7d32;
+      --error-color: #d32f2f;
+      --success-border: #c8e6c9;
+      --error-border: #ffcdd2;
+    }
+
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-      background: #0a0a0a;
-      color: #e0e0e0;
+      background: var(--bg-primary);
+      color: var(--text-primary);
       font-family: 'Segoe UI', sans-serif;
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
       padding: 40px 20px;
+      transition: background-color 0.3s ease, color 0.3s ease;
     }
 
     .container { width: 100%; max-width: 680px; }
 
-    .header { text-align: center; margin-bottom: 40px; }
+    .header { 
+      text-align: center; 
+      margin-bottom: 40px; 
+      position: relative;
+    }
     .header h1 {
       font-size: 2rem; font-weight: 300;
-      letter-spacing: 4px; text-transform: uppercase; color: #fff;
+      letter-spacing: 4px; text-transform: uppercase; 
+      color: var(--text-accent);
     }
-    .header p { color: #555; font-size: 0.85rem; margin-top: 8px; letter-spacing: 2px; }
+    .header p { 
+      color: var(--text-secondary); 
+      font-size: 0.85rem; 
+      margin-top: 8px; 
+      letter-spacing: 2px; 
+    }
 
-    /* ── TOGGLE ── */
+    /* ── THEME TOGGLE ── */
+    .theme-toggle {
+      position: absolute;
+      top: 0;
+      right: 0;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-primary);
+      border-radius: 20px;
+      padding: 8px 12px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .theme-toggle:hover {
+      border-color: var(--border-hover);
+      color: var(--text-primary);
+    }
+    .theme-icon {
+      font-size: 1rem;
+      transition: transform 0.3s ease;
+    }
+    .theme-toggle:hover .theme-icon {
+      transform: rotate(180deg);
+    }
+
+    /* ── MODE TOGGLE ── */
     .toggle-wrap {
       display: flex;
-      background: #111;
-      border: 1px solid #1e1e1e;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-primary);
       border-radius: 12px;
       padding: 4px;
       margin-bottom: 20px;
@@ -42,7 +130,7 @@
       background: transparent;
       border: none;
       border-radius: 9px;
-      color: #555;
+      color: var(--text-secondary);
       font-size: 0.75rem;
       letter-spacing: 2px;
       text-transform: uppercase;
@@ -50,20 +138,21 @@
       transition: all 0.2s;
     }
     .toggle-btn.active {
-      background: #1e1e1e;
-      color: #fff;
+      background: var(--border-primary);
+      color: var(--text-accent);
     }
 
     .card {
-      background: #111;
-      border: 1px solid #1e1e1e;
+      background: var(--card-bg);
+      border: 1px solid var(--border-primary);
       border-radius: 16px;
       padding: 40px;
+      transition: background-color 0.3s ease, border-color 0.3s ease;
     }
 
     .section-title {
       font-size: 0.7rem; letter-spacing: 3px;
-      text-transform: uppercase; color: #444;
+      text-transform: uppercase; color: var(--text-tertiary);
       margin-bottom: 20px; margin-top: 30px;
     }
     .section-title:first-child { margin-top: 0; }
@@ -72,18 +161,23 @@
     .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
 
     .field { display: flex; flex-direction: column; gap: 6px; }
-    .field label { font-size: 0.75rem; color: #666; letter-spacing: 1px; }
-    .field .hint { font-size: 0.65rem; color: #333; margin-top: -4px; }
+    .field label { font-size: 0.75rem; color: var(--text-secondary); letter-spacing: 1px; }
+    .field .hint { font-size: 0.65rem; color: var(--text-tertiary); margin-top: -4px; }
 
     .field select, .field input {
-      background: #0a0a0a; border: 1px solid #222;
-      border-radius: 8px; color: #e0e0e0;
-      padding: 12px 14px; font-size: 0.9rem;
-      outline: none; transition: border-color 0.2s;
-      appearance: none; -webkit-appearance: none;
+      background: var(--input-bg); 
+      border: 1px solid var(--border-secondary);
+      border-radius: 8px; 
+      color: var(--text-primary);
+      padding: 12px 14px; 
+      font-size: 0.9rem;
+      outline: none; 
+      transition: border-color 0.2s, background-color 0.3s ease;
+      appearance: none; 
+      -webkit-appearance: none;
     }
-    .field select:focus, .field input:focus { border-color: #444; }
-    .field select option { background: #111; }
+    .field select:focus, .field input:focus { border-color: var(--border-hover); }
+    .field select option { background: var(--card-bg); color: var(--text-primary); }
 
     /* ── BATCH SECTION ── */
     .batch-section { display: none; }
@@ -92,7 +186,7 @@
     .single-section.hide { display: none; }
 
     .drop-zone {
-      border: 2px dashed #222;
+      border: 2px dashed var(--border-secondary);
       border-radius: 12px;
       padding: 50px 20px;
       text-align: center;
@@ -101,50 +195,58 @@
       position: relative;
     }
     .drop-zone:hover, .drop-zone.dragover {
-      border-color: #444;
-      background: #0f0f0f;
+      border-color: var(--border-hover);
+      background: var(--bg-tertiary);
     }
     .drop-zone input[type="file"] {
       position: absolute; inset: 0;
       opacity: 0; cursor: pointer; width: 100%; height: 100%;
     }
-    .drop-icon { font-size: 2rem; margin-bottom: 12px; display: block; color: #333; }
-    .drop-text { font-size: 0.8rem; color: #444; letter-spacing: 1px; }
-    .drop-filename { font-size: 0.75rem; color: #666; margin-top: 8px; }
+    .drop-icon { font-size: 2rem; margin-bottom: 12px; display: block; color: var(--text-tertiary); }
+    .drop-text { font-size: 0.8rem; color: var(--text-tertiary); letter-spacing: 1px; }
+    .drop-filename { font-size: 0.75rem; color: var(--text-secondary); margin-top: 8px; }
 
     .csv-hint {
       margin-top: 16px;
       padding: 14px;
-      background: #0d0d0d;
-      border: 1px solid #1a1a1a;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-primary);
       border-radius: 8px;
       font-size: 0.7rem;
-      color: #444;
+      color: var(--text-tertiary);
       line-height: 1.8;
       letter-spacing: 0.5px;
+      transition: background-color 0.3s ease, border-color 0.3s ease;
     }
-    .csv-hint span { color: #666; }
+    .csv-hint span { color: var(--text-secondary); }
 
     .submit-btn {
       width: 100%; margin-top: 32px; padding: 16px;
-      background: #fff; color: #000; border: none;
+      background: var(--button-bg); 
+      color: var(--button-text); 
+      border: none;
       border-radius: 10px; font-size: 0.85rem;
       letter-spacing: 3px; text-transform: uppercase;
       cursor: pointer; transition: background 0.2s, transform 0.1s;
       font-weight: 600;
     }
-    .submit-btn:hover { background: #e0e0e0; }
+    .submit-btn:hover { background: var(--button-hover); }
     .submit-btn:active { transform: scale(0.98); }
-    .submit-btn:disabled { background: #222; color: #444; cursor: not-allowed; }
+    .submit-btn:disabled { 
+      background: var(--border-secondary); 
+      color: var(--text-tertiary); 
+      cursor: not-allowed; 
+    }
 
     /* ── BATCH RESULT ── */
     .batch-result {
       display: none;
       margin-top: 24px;
       padding: 20px;
-      background: #0d0d0d;
-      border: 1px solid #1a1a1a;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-primary);
       border-radius: 12px;
+      transition: background-color 0.3s ease, border-color 0.3s ease;
     }
     .batch-result.show { display: block; }
     .batch-stats {
@@ -152,24 +254,35 @@
     }
     .stat-box {
       flex: 1; padding: 16px; border-radius: 10px;
-      text-align: center; border: 1px solid #1a1a1a;
+      text-align: center; border: 1px solid var(--border-primary);
+      transition: border-color 0.3s ease;
     }
-    .stat-box.approved-box { border-color: #1a3a1a; }
-    .stat-box.rejected-box { border-color: #3a1a1a; }
+    .stat-box.approved-box { border-color: var(--success-border); }
+    .stat-box.rejected-box { border-color: var(--error-border); }
     .stat-num { font-size: 1.8rem; font-weight: 300; }
-    .approved-box .stat-num { color: #4caf50; }
-    .rejected-box .stat-num { color: #f44336; }
-    .stat-label { font-size: 0.65rem; color: #444; letter-spacing: 2px; margin-top: 4px; }
+    .approved-box .stat-num { color: var(--success-color); }
+    .rejected-box .stat-num { color: var(--error-color); }
+    .stat-label { 
+      font-size: 0.65rem; 
+      color: var(--text-tertiary); 
+      letter-spacing: 2px; 
+      margin-top: 4px; 
+    }
 
     .download-btn {
       width: 100%; padding: 12px;
-      background: transparent; border: 1px solid #333;
-      border-radius: 8px; color: #888;
+      background: transparent; 
+      border: 1px solid var(--border-secondary);
+      border-radius: 8px; 
+      color: var(--text-secondary);
       font-size: 0.75rem; letter-spacing: 2px;
       cursor: pointer; transition: all 0.2s;
       text-transform: uppercase;
     }
-    .download-btn:hover { border-color: #555; color: #ccc; }
+    .download-btn:hover { 
+      border-color: var(--border-hover); 
+      color: var(--text-primary); 
+    }
 
     /* ── OVERLAY ── */
     .overlay {
@@ -182,9 +295,10 @@
 
     .result-box {
       text-align: center; padding: 60px 50px;
-      border-radius: 20px; border: 1px solid #222;
-      background: #111; max-width: 380px; width: 90%;
+      border-radius: 20px; border: 1px solid var(--border-secondary);
+      background: var(--card-bg); max-width: 380px; width: 90%;
       animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      transition: background-color 0.3s ease, border-color 0.3s ease;
     }
     @keyframes popIn {
       0%   { transform: scale(0.5); opacity: 0; }
@@ -197,13 +311,21 @@
       60% { transform: translateX(-8px); }
       80% { transform: translateX(8px); }
     }
-    .result-box.approved { border-color: #1a3a1a; }
-    .result-box.rejected { border-color: #3a1a1a; animation: shake 0.5s ease; }
+    .result-box.approved { border-color: var(--success-border); }
+    .result-box.rejected { border-color: var(--error-border); animation: shake 0.5s ease; }
     .result-icon { font-size: 4rem; margin-bottom: 20px; display: block; }
-    .result-title { font-size: 1.5rem; font-weight: 300; letter-spacing: 4px; text-transform: uppercase; margin-bottom: 10px; }
-    .approved .result-title { color: #4caf50; }
-    .rejected .result-title { color: #f44336; }
-    .result-msg { font-size: 0.8rem; color: #555; letter-spacing: 1px; line-height: 1.6; }
+    .result-title { 
+      font-size: 1.5rem; font-weight: 300; letter-spacing: 4px; 
+      text-transform: uppercase; margin-bottom: 10px; 
+    }
+    .approved .result-title { color: var(--success-color); }
+    .rejected .result-title { color: var(--error-color); }
+    .result-msg { 
+      font-size: 0.8rem; 
+      color: var(--text-secondary); 
+      letter-spacing: 1px; 
+      line-height: 1.6; 
+    }
 
     .confetti-container { position: fixed; inset: 0; pointer-events: none; z-index: 99; }
     .confetti-piece {
@@ -214,16 +336,22 @@
 
     .close-btn {
       margin-top: 28px; padding: 10px 28px;
-      background: transparent; border: 1px solid #333;
-      border-radius: 8px; color: #888;
+      background: transparent; 
+      border: 1px solid var(--border-secondary);
+      border-radius: 8px; 
+      color: var(--text-secondary);
       font-size: 0.75rem; letter-spacing: 2px;
       cursor: pointer; transition: border-color 0.2s, color 0.2s;
     }
-    .close-btn:hover { border-color: #666; color: #ccc; }
+    .close-btn:hover { 
+      border-color: var(--text-secondary); 
+      color: var(--text-primary); 
+    }
 
     .loader {
       display: none; width: 20px; height: 20px;
-      border: 2px solid #333; border-top-color: #fff;
+      border: 2px solid var(--border-secondary); 
+      border-top-color: var(--text-accent);
       border-radius: 50%; animation: spin 0.6s linear infinite; margin: 0 auto;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
@@ -242,6 +370,10 @@
   <div class="header">
     <h1>Loan Prediction V2</h1>
     <p>Enhanced MLOps — Rich Feature Set</p>
+    <button class="theme-toggle" onclick="toggleTheme()">
+      <span class="theme-icon" id="themeIcon">🌙</span>
+      <span id="themeText">Dark</span>
+    </button>
   </div>
 
   <!-- Toggle -->
@@ -288,7 +420,7 @@
           <div class="field">
             <label>Annual Income</label>
             <span class="hint">★ Critical — yearly income ($)</span>
-            <input type="number" name="annual_income" placeholder="e.g. 75000" min="0" required />
+            <input type="number" name="annual_income" placeholder="e.g. 75000" min="0" required onchange="calculateDebtToIncomeRatio()" />
           </div>
           <div class="field">
             <label>Credit Score</label>
@@ -303,7 +435,7 @@
           <div class="field">
             <label>Current Debt</label>
             <span class="hint">Existing debt obligations ($)</span>
-            <input type="number" name="current_debt" placeholder="e.g. 15000" min="0" required />
+            <input type="number" name="current_debt" placeholder="e.g. 15000" min="0" required onchange="calculateDebtToIncomeRatio()" />
           </div>
           <div class="field">
             <label>Loan Amount</label>
@@ -312,8 +444,8 @@
           </div>
           <div class="field">
             <label>Debt-to-Income Ratio</label>
-            <span class="hint">Current debt / income (0.0 - 1.0)</span>
-            <input type="number" name="debt_to_income_ratio" placeholder="e.g. 0.35" min="0" max="1" step="0.01" required />
+            <span class="hint">Auto-calculated (current debt ÷ income)</span>
+            <input type="number" name="debt_to_income_ratio" placeholder="Auto-calculated" step="0.01" readonly style="background: var(--bg-tertiary); cursor: not-allowed;" />
           </div>
         </div>
 
@@ -385,7 +517,8 @@
         age · occupation_status · years_employed · annual_income · credit_score ·
         credit_history_years · savings_assets · current_debt · defaults_on_file ·
         delinquencies_last_2yrs · derogatory_marks · product_type · loan_intent ·
-        loan_amount · debt_to_income_ratio
+        loan_amount · debt_to_income_ratio<br><br>
+        <span>Note:</span> debt_to_income_ratio can be calculated as (current_debt ÷ annual_income)
       </div>
 
       <button class="submit-btn" id="batchBtn" onclick="submitBatch()">Run Batch Prediction</button>
@@ -425,6 +558,74 @@
   const BASE = 'http://ec2-13-62-110-20.eu-north-1.compute.amazonaws.com:8005';
   let batchBlob = null;
 
+  // ── THEME TOGGLE ──
+  function toggleTheme() {
+    const html = document.documentElement;
+    const themeIcon = document.getElementById('themeIcon');
+    const themeText = document.getElementById('themeText');
+    
+    const currentTheme = html.getAttribute('data-theme');
+    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+    
+    html.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+    
+    if (newTheme === 'light') {
+      themeIcon.textContent = '☀️';
+      themeText.textContent = 'Light';
+    } else {
+      themeIcon.textContent = '🌙';
+      themeText.textContent = 'Dark';
+    }
+  }
+
+  // Load saved theme on page load
+  document.addEventListener('DOMContentLoaded', function() {
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    const html = document.documentElement;
+    const themeIcon = document.getElementById('themeIcon');
+    const themeText = document.getElementById('themeText');
+    
+    html.setAttribute('data-theme', savedTheme);
+    
+    if (savedTheme === 'light') {
+      themeIcon.textContent = '☀️';
+      themeText.textContent = 'Light';
+    } else {
+      themeIcon.textContent = '🌙';
+      themeText.textContent = 'Dark';
+    }
+  });
+
+  // ── DEBT-TO-INCOME RATIO CALCULATION ──
+  function calculateDebtToIncomeRatio() {
+    const annualIncome = parseFloat(document.querySelector('input[name="annual_income"]').value) || 0;
+    const currentDebt = parseFloat(document.querySelector('input[name="current_debt"]').value) || 0;
+    const ratioField = document.querySelector('input[name="debt_to_income_ratio"]');
+    
+    if (annualIncome > 0) {
+      const ratio = (currentDebt / annualIncome).toFixed(3);
+      ratioField.value = ratio;
+      
+      // Visual feedback for ratio levels
+      const ratioValue = parseFloat(ratio);
+      if (ratioValue > 0.4) {
+        ratioField.style.color = 'var(--error-color)';
+        ratioField.style.fontWeight = 'bold';
+      } else if (ratioValue > 0.3) {
+        ratioField.style.color = '#ff9800';
+        ratioField.style.fontWeight = 'bold';
+      } else {
+        ratioField.style.color = 'var(--success-color)';
+        ratioField.style.fontWeight = 'bold';
+      }
+    } else {
+      ratioField.value = '';
+      ratioField.style.color = 'var(--text-primary)';
+      ratioField.style.fontWeight = 'normal';
+    }
+  }
+
   // ── MODE TOGGLE ──
   function switchMode(mode) {
     document.getElementById('singleSection').classList.toggle('hide', mode === 'batch');
@@ -456,6 +657,10 @@
   // ── SINGLE PREDICTION ──
   document.getElementById('loanForm').addEventListener('submit', async (e) => {
     e.preventDefault();
+    
+    // Ensure debt-to-income ratio is calculated before submission
+    calculateDebtToIncomeRatio();
+    
     const btn = document.getElementById('submitBtn');
     btn.disabled = true;
     btn.innerHTML = '<div class="loader" style="display:block"></div>';
@@ -478,6 +683,14 @@
       loan_amount:              parseInt(form.loan_amount.value),
       debt_to_income_ratio:     parseFloat(form.debt_to_income_ratio.value)
     };
+
+    // Validation: ensure debt-to-income ratio is calculated
+    if (!form.debt_to_income_ratio.value || form.debt_to_income_ratio.value === '') {
+      alert('Please enter both Annual Income and Current Debt to calculate the debt-to-income ratio.');
+      btn.disabled = false;
+      btn.innerHTML = 'Check Eligibility';
+      return;
+    }
 
     try {
       const res  = await fetch(`${BASE}/prediction_api`, {

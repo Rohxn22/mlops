@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Loan Prediction</title>
+  <title>Loan Prediction V2</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -69,6 +69,7 @@
     .section-title:first-child { margin-top: 0; }
 
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
 
     .field { display: flex; flex-direction: column; gap: 6px; }
     .field label { font-size: 0.75rem; color: #666; letter-spacing: 1px; }
@@ -229,6 +230,7 @@
 
     @media (max-width: 500px) {
       .grid-2 { grid-template-columns: 1fr; }
+      .grid-3 { grid-template-columns: 1fr; }
       .card { padding: 24px; }
       .batch-stats { flex-direction: column; }
     }
@@ -238,8 +240,8 @@
 
 <div class="container">
   <div class="header">
-    <h1>Loan Prediction</h1>
-    <p>MLOps — Powered by XGBoost</p>
+    <h1>Loan Prediction V2</h1>
+    <p>Enhanced MLOps — Rich Feature Set</p>
   </div>
 
   <!-- Toggle -->
@@ -256,93 +258,111 @@
         <div class="section-title">Personal Information</div>
         <div class="grid-2">
           <div class="field">
-            <label>Gender</label>
-            <select name="Gender" required>
+            <label>Age</label>
+            <span class="hint">Your current age</span>
+            <input type="number" name="age" placeholder="e.g. 35" min="18" max="80" required />
+          </div>
+          <div class="field">
+            <label>Occupation Status</label>
+            <select name="occupation_status" required>
               <option value="">Select</option>
-              <option>Male</option><option>Female</option>
+              <option>Employed</option>
+              <option>Self-Employed</option>
+              <option>Unemployed</option>
             </select>
           </div>
           <div class="field">
-            <label>Married</label>
-            <select name="Married" required>
-              <option value="">Select</option>
-              <option>Yes</option><option>No</option>
-            </select>
+            <label>Years Employed</label>
+            <span class="hint">Total work experience</span>
+            <input type="number" name="years_employed" placeholder="e.g. 8.5" min="0" max="50" step="0.1" required />
           </div>
           <div class="field">
-            <label>Dependents</label>
-            <span class="hint">Number of people dependent on you</span>
-            <select name="Dependents" required>
-              <option value="">Select</option>
-              <option>0</option><option>1</option><option>2</option><option>3+</option>
-            </select>
-          </div>
-          <div class="field">
-            <label>Education</label>
-            <select name="Education" required>
-              <option value="">Select</option>
-              <option>Graduate</option><option>Not Graduate</option>
-            </select>
-          </div>
-          <div class="field">
-            <label>Self Employed</label>
-            <select name="Self_Employed" required>
-              <option value="">Select</option>
-              <option>Yes</option><option>No</option>
-            </select>
-          </div>
-          <div class="field">
-            <label>Property Area</label>
-            <span class="hint">Location of the property</span>
-            <select name="Property_Area" required>
-              <option value="">Select</option>
-              <option>Urban</option><option>Semiurban</option><option>Rural</option>
-            </select>
+            <label>Credit History Years</label>
+            <span class="hint">Years of credit history</span>
+            <input type="number" name="credit_history_years" placeholder="e.g. 12.3" min="0" max="50" step="0.1" required />
           </div>
         </div>
 
         <div class="section-title">Financial Details</div>
         <div class="grid-2">
           <div class="field">
-            <label>Applicant Income</label>
-            <span class="hint">★ Critical — monthly income (₹)</span>
-            <input type="number" name="ApplicantIncome" placeholder="e.g. 5000" min="0" required />
+            <label>Annual Income</label>
+            <span class="hint">★ Critical — yearly income ($)</span>
+            <input type="number" name="annual_income" placeholder="e.g. 75000" min="0" required />
           </div>
           <div class="field">
-            <label>Co-applicant Income</label>
-            <span class="hint">Spouse/co-borrower income (₹)</span>
-            <input type="number" name="CoapplicantIncome" placeholder="e.g. 2000" min="0" required />
+            <label>Credit Score</label>
+            <span class="hint">★ Most Critical — FICO score</span>
+            <input type="number" name="credit_score" placeholder="e.g. 720" min="300" max="850" required />
+          </div>
+          <div class="field">
+            <label>Savings Assets</label>
+            <span class="hint">Total savings & investments ($)</span>
+            <input type="number" name="savings_assets" placeholder="e.g. 25000" min="0" required />
+          </div>
+          <div class="field">
+            <label>Current Debt</label>
+            <span class="hint">Existing debt obligations ($)</span>
+            <input type="number" name="current_debt" placeholder="e.g. 15000" min="0" required />
           </div>
           <div class="field">
             <label>Loan Amount</label>
-            <span class="hint">★ Critical — amount in thousands (₹)</span>
-            <input type="number" name="LoanAmount" placeholder="e.g. 150" min="0" required />
+            <span class="hint">★ Critical — requested amount ($)</span>
+            <input type="number" name="loan_amount" placeholder="e.g. 200000" min="0" required />
           </div>
           <div class="field">
-            <label>Loan Amount Term</label>
-            <span class="hint">Duration in months</span>
-            <select name="Loan_Amount_Term" required>
-              <option value="">Select</option>
-              <option value="360">360 months (30 years)</option>
-              <option value="180">180 months (15 years)</option>
-              <option value="120">120 months (10 years)</option>
-              <option value="84">84 months (7 years)</option>
-              <option value="60">60 months (5 years)</option>
-              <option value="36">36 months (3 years)</option>
-              <option value="12">12 months (1 year)</option>
-            </select>
+            <label>Debt-to-Income Ratio</label>
+            <span class="hint">Current debt / income (0.0 - 1.0)</span>
+            <input type="number" name="debt_to_income_ratio" placeholder="e.g. 0.35" min="0" max="1" step="0.01" required />
           </div>
         </div>
 
-        <div class="section-title">Credit History</div>
-        <div class="field">
-          <label>Credit History</label>
-          <span class="hint">★ Most Critical — good credit history greatly increases approval chances</span>
-          <select name="Credit_History" required>
-            <option value="">Select</option>
-            <option value="1.0">Good (1) — meets guidelines</option>
-            <option value="0.0">Poor (0) — does not meet guidelines</option>
-          </select>
+        <div class="section-title">Credit Risk Factors</div>
+        <div class="grid-3">
+          <div class="field">
+            <label>Defaults on File</label>
+            <span class="hint">Number of past defaults</span>
+            <input type="number" name="defaults_on_file" placeholder="e.g. 0" min="0" max="10" required />
+          </div>
+          <div class="field">
+            <label>Delinquencies (Last 2 Years)</label>
+            <span class="hint">Late payments count</span>
+            <input type="number" name="delinquencies_last_2yrs" placeholder="e.g. 1" min="0" max="20" required />
+          </div>
+          <div class="field">
+            <label>Derogatory Marks</label>
+            <span class="hint">Negative credit marks</span>
+            <input type="number" name="derogatory_marks" placeholder="e.g. 0" min="0" max="10" required />
+          </div>
+        </div>
+
+        <div class="section-title">Loan Details</div>
+        <div class="grid-2">
+          <div class="field">
+            <label>Product Type</label>
+            <select name="product_type" required>
+              <option value="">Select</option>
+              <option>Personal</option>
+              <option>Auto</option>
+              <option>Home</option>
+              <option>Business</option>
+              <option>Education</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Loan Intent</label>
+            <span class="hint">Purpose of the loan</span>
+            <select name="loan_intent" required>
+              <option value="">Select</option>
+              <option>debt_consolidation</option>
+              <option>home_improvement</option>
+              <option>major_purchase</option>
+              <option>medical</option>
+              <option>vacation</option>
+              <option>wedding</option>
+              <option>other</option>
+            </select>
+          </div>
         </div>
 
         <button type="submit" class="submit-btn" id="submitBtn">Check Eligibility</button>
@@ -362,9 +382,10 @@
 
       <div class="csv-hint">
         <span>Required columns:</span><br>
-        Gender · Married · Dependents · Education · Self_Employed ·
-        ApplicantIncome · CoapplicantIncome · LoanAmount ·
-        Loan_Amount_Term · Credit_History · Property_Area
+        age · occupation_status · years_employed · annual_income · credit_score ·
+        credit_history_years · savings_assets · current_debt · defaults_on_file ·
+        delinquencies_last_2yrs · derogatory_marks · product_type · loan_intent ·
+        loan_amount · debt_to_income_ratio
       </div>
 
       <button class="submit-btn" id="batchBtn" onclick="submitBatch()">Run Batch Prediction</button>
@@ -401,7 +422,7 @@
 <div class="confetti-container" id="confettiContainer"></div>
 
 <script>
-  const BASE = 'http://ec2-13-62-110-20.eu-north-1.compute.amazonaws.com:8005';
+  const BASE = 'http://localhost:8005';  // Updated for local testing
   let batchBlob = null;
 
   // ── MODE TOGGLE ──
@@ -441,17 +462,21 @@
 
     const form = e.target;
     const data = {
-      Gender:            form.Gender.value,
-      Married:           form.Married.value,
-      Dependents:        form.Dependents.value,
-      Education:         form.Education.value,
-      Self_Employed:     form.Self_Employed.value,
-      ApplicantIncome:   parseFloat(form.ApplicantIncome.value),
-      CoapplicantIncome: parseFloat(form.CoapplicantIncome.value),
-      LoanAmount:        parseFloat(form.LoanAmount.value),
-      Loan_Amount_Term:  parseFloat(form.Loan_Amount_Term.value),
-      Credit_History:    parseFloat(form.Credit_History.value),
-      Property_Area:     form.Property_Area.value
+      age:                      parseInt(form.age.value),
+      occupation_status:        form.occupation_status.value,
+      years_employed:           parseFloat(form.years_employed.value),
+      annual_income:            parseInt(form.annual_income.value),
+      credit_score:             parseInt(form.credit_score.value),
+      credit_history_years:     parseFloat(form.credit_history_years.value),
+      savings_assets:           parseInt(form.savings_assets.value),
+      current_debt:             parseInt(form.current_debt.value),
+      defaults_on_file:         parseInt(form.defaults_on_file.value),
+      delinquencies_last_2yrs:  parseInt(form.delinquencies_last_2yrs.value),
+      derogatory_marks:         parseInt(form.derogatory_marks.value),
+      product_type:             form.product_type.value,
+      loan_intent:              form.loan_intent.value,
+      loan_amount:              parseInt(form.loan_amount.value),
+      debt_to_income_ratio:     parseFloat(form.debt_to_income_ratio.value)
     };
 
     try {
@@ -541,13 +566,13 @@
       box.classList.add('approved');
       icon.textContent  = '✦';
       title.textContent = 'Approved';
-      msg.textContent   = 'Congratulations! Your loan application meets our criteria and has been approved.';
+      msg.textContent   = 'Congratulations! Your loan application meets our enhanced criteria and has been approved.';
       launchConfetti();
     } else if (status === 'Rejected') {
       box.classList.add('rejected');
       icon.textContent  = '✕';
       title.textContent = 'Rejected';
-      msg.textContent   = 'Unfortunately your application does not meet the current criteria. Consider improving your credit history or reducing the loan amount.';
+      msg.textContent   = 'Unfortunately your application does not meet the current criteria. Consider improving your credit score, reducing debt-to-income ratio, or building credit history.';
     } else {
       box.classList.add('rejected');
       icon.textContent  = '!';

@@ -9,14 +9,14 @@ This project implements a robust MLOps pipeline for loan prediction using a rich
 
 ### 🔄 **Data Versioning & Management**
 - **DVC (Data Version Control)** for dataset versioning
-- **S3 Integration** for scalable data storage
+- **AWS S3** for scalable data storage
 - **Rich Feature Dataset** with 15 loan-related features
 
 ### 🚀 **Continuous Integration (CI)**
 - **GitHub Actions** workflow automation
 - **Docker** containerization and image building
+- **Docker Hub** for container registry
 - **Pytest** automated testing
-- **AWS ECR** for container registry
 
 ### 🧪 **Experiment Tracking & Model Management**
 - **MLflow** for experiment tracking and model versioning
@@ -26,14 +26,15 @@ This project implements a robust MLOps pipeline for loan prediction using a rich
 
 ### 📦 **Continuous Deployment (CD)**
 - **FastAPI** REST API for predictions
-- **AWS EKS** Kubernetes deployment
+- **AWS EC2** for application hosting
+- **Docker** containerized deployment
 - **Real-time** and **batch prediction** endpoints
 - **Health monitoring** endpoints
 
 ### 📊 **Continuous Monitoring (CM)**
 - **Prometheus** metrics collection via `/metrics` endpoint
 - **Grafana** visualization dashboards
-- **Resource monitoring** for Kubernetes clusters
+- **cAdvisor** for container monitoring
 - **API performance** tracking
 
 ### 🔄 **Continuous Training (CT)**
@@ -59,11 +60,12 @@ This project implements a robust MLOps pipeline for loan prediction using a rich
 ## Architecture
 
 The system follows MLOps best practices with:
-- **Microservices** architecture
-- **Container-first** deployment
-- **Infrastructure as Code**
-- **Automated CI/CD** pipelines
-- **Comprehensive monitoring**
+- **Containerized** deployment on AWS EC2
+- **Docker Hub** for image registry
+- **GitHub Actions** for CI/CD automation
+- **DVC + S3** for data versioning
+- **MLflow** for experiment tracking
+- **Comprehensive monitoring** stack
 
 ## Dataset Features
 
@@ -75,13 +77,39 @@ The enhanced loan prediction model uses 15 features:
 
 ## Technology Stack
 
-- **ML**: scikit-learn, XGBoost, hyperopt
-- **API**: FastAPI, Pydantic, uvicorn
-- **Tracking**: MLflow, DVC
-- **Infrastructure**: AWS (EKS, ECR, S3), Docker, Kubernetes
-- **Monitoring**: Prometheus, Grafana
-- **CI/CD**: GitHub Actions
-- **Frontend**: HTML/CSS/JavaScript
+### **Machine Learning**
+- scikit-learn, XGBoost, hyperopt
+- MLflow for experiment tracking
+- DVC for data versioning
+
+### **API & Web**
+- FastAPI, Pydantic, uvicorn
+- HTML/CSS/JavaScript frontend
+
+### **Infrastructure**
+- **AWS EC2** - Application hosting
+- **AWS S3** - Data storage
+- **Docker Hub** - Container registry
+- **Docker** - Containerization
+
+### **CI/CD & Monitoring**
+- **GitHub Actions** - Automation
+- **Prometheus** - Metrics collection
+- **Grafana** - Visualization
+- **cAdvisor** - Container monitoring
+
+## Deployment Pipeline
+
+1. **Code Push** → GitHub repository
+2. **GitHub Actions** triggers:
+   - DVC data pull from S3
+   - Docker image build
+   - Push to Docker Hub
+   - Deploy to EC2 via SSH
+3. **EC2 Deployment**:
+   - Pull latest image
+   - Stop/remove old container
+   - Start new container with environment variables
 
 ## Quick Start
 
@@ -91,10 +119,8 @@ The enhanced loan prediction model uses 15 features:
 4. **Access API**: `http://localhost:8005`
 5. **View docs**: `http://localhost:8005/docs`
 
-## Production Deployment
+## Production URLs
 
-The application is deployed on AWS EKS with:
-- **Load balancing** for high availability
-- **Auto-scaling** based on demand
-- **Health checks** and monitoring
-- **Secure secrets** management
+- **Application**: `http://ec2-13-62-110-20.eu-north-1.compute.amazonaws.com:8005`
+- **MLflow**: `http://ec2-13-63-102-32.eu-north-1.compute.amazonaws.com:5000`
+- **Monitoring**: Prometheus + Grafana stack

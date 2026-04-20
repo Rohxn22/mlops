@@ -89,7 +89,7 @@ def train_baseline():
         }
         mlflow.log_param("model_type", "LogisticRegression")
         mlflow.log_metrics(metrics)
-        mlflow.sklearn.log_model(pipeline, config.MODEL_NAME)
+        mlflow.sklearn.log_model(pipeline, config.MODEL_NAME, registered_model_name=config.MODEL_NAME)
 
         print(f"Baseline LR → F1: {metrics['f1_score']:.4f} | Acc: {metrics['accuracy']:.4f}")
 
@@ -121,7 +121,6 @@ def objective(params):
         gamma=params['gamma'],
         reg_alpha=params['reg_alpha'],
         reg_lambda=params['reg_lambda'],
-        use_label_encoder=False,
         eval_metric='logloss'
     )
 
@@ -147,7 +146,7 @@ def objective(params):
             'recall': recall,
             'precision': precision
         })
-        mlflow.sklearn.log_model(classification_pipeline, config.MODEL_NAME)
+        mlflow.sklearn.log_model(classification_pipeline, config.MODEL_NAME, registered_model_name=config.MODEL_NAME)
 
     return {'loss': 1 - f1, 'status': STATUS_OK}
 

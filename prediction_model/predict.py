@@ -49,10 +49,19 @@ def _load_best_model():
     for _, run in runs_to_try.iterrows():
         try:
             run_id = run['run_id']
-            model_uri = f'runs:/{run_id}/{config.MODEL_NAME}'
-            model = mlflow.sklearn.load_model(model_uri)
-            print(f"Successfully loaded model from run: {run_id}")
-            return model
+            # Try different artifact paths that we use in training
+            artifact_paths = ["trained_model", "model"]
+            
+            for artifact_path in artifact_paths:
+                try:
+                    model_uri = f'runs:/{run_id}/{artifact_path}'
+                    model = mlflow.sklearn.load_model(model_uri)
+                    print(f"Successfully loaded model from run: {run_id} (artifact: {artifact_path})")
+                    return model
+                except Exception as e:
+                    print(f"Failed to load from {artifact_path}: {e}")
+                    continue
+                    
         except Exception as e:
             print(f"Failed to load model from run {run_id}: {e}")
             continue

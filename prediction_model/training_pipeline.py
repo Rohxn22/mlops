@@ -7,6 +7,8 @@ from sklearn.pipeline import Pipeline
 from sklearn.base import BaseEstimator, TransformerMixin
 import mlflow
 import mlflow.sklearn
+import mlflow.data
+from mlflow.data.pandas_dataset import PandasDataset
 from hyperopt import fmin, tpe, hp, Trials, STATUS_OK
 import xgboost as xgb
 
@@ -97,6 +99,9 @@ def train_baseline():
         ('LogisticRegression', LogisticRegression(max_iter=1000))
     ])
 
+    # Completely disable autolog to prevent duplicate model logging
+    mlflow.sklearn.autolog(disable=True)
+
     # Ensure experiment exists
     try:
         mlflow.create_experiment(config.EXPERIMENT_NAME)
@@ -109,6 +114,22 @@ def train_baseline():
 
     with mlflow.start_run(run_name=f"baseline-lr-{run_tag}"):
         pipeline.fit(X_train, y_train)
+        
+        # Log training dataset explicitly
+        train_dataset = mlflow.data.from_pandas(
+            X_train, 
+            source=f"training_data_from_{config.DATASET_FILE}",
+            name="training_dataset"
+        )
+        mlflow.log_input(train_dataset, context="training")
+        
+        # Log test dataset for evaluation
+        test_dataset = mlflow.data.from_pandas(
+            X_test, 
+            source=f"test_data_from_{config.DATASET_FILE}",
+            name="test_dataset"
+        )
+        mlflow.log_input(test_dataset, context="eval")
         
         # Evaluate on both train and test sets
         y_train_pred = pipeline.predict(X_train)
@@ -130,9 +151,25 @@ def train_baseline():
             'precision': precision_score(y_test, y_test_pred),
         }
         
+        # Log training dataset info (single entry)
+        mlflow.log_param("dataset_file", config.DATASET_FILE)
+        mlflow.log_param("train_samples", len(X_train))
+        mlflow.log_param("test_samples", len(X_test))
+        mlflow.log_param("features_count", len(config.FEATURES))
+        
         mlflow.log_param("model_type", "LogisticRegression")
         mlflow.log_metrics({**train_metrics, **test_metrics})
-        mlflow.sklearn.log_model(pipeline, config.MODEL_NAME, registered_model_name=config.MODEL_NAME)
+        
+        # Register model with explicit name only
+        try:
+            mlflow.sklearn.log_model(
+                pipeline, 
+                "trained_model",  # Use different artifact path to avoid conflicts
+                registered_model_name=config.MODEL_NAME
+            )
+            print(f"✅ Model registered as: {config.MODEL_NAME}")
+        except Exception as e:
+            print(f"⚠️ Model registration failed: {e}")
 
         print(f"Baseline LR → Train F1: {train_metrics['train_f1_score']:.4f} | Test F1: {test_metrics['f1_score']:.4f}")
         print(f"             Train Acc: {train_metrics['train_accuracy']:.4f} | Test Acc: {test_metrics['accuracy']:.4f}")
@@ -170,7 +207,8 @@ def objective(params):
 
     classification_pipeline = Pipeline(build_preprocessing() + [('XGBoostClassifier', clf)])
 
-    mlflow.xgboost.autolog()
+    # Disable autolog to prevent multiple dataset logging and control what gets logged
+    mlflow.xgboost.autolog(disable=True)
     
     # Ensure experiment exists
     try:
@@ -184,6 +222,22 @@ def objective(params):
 
     with mlflow.start_run(nested=True, run_name=run_name):
         classification_pipeline.fit(X_train, y_train)
+        
+        # Log training dataset explicitly
+        train_dataset = mlflow.data.from_pandas(
+            X_train, 
+            source=f"training_data_from_{config.DATASET_FILE}",
+            name="training_dataset"
+        )
+        mlflow.log_input(train_dataset, context="training")
+        
+        # Log test dataset for evaluation
+        test_dataset = mlflow.data.from_pandas(
+            X_test, 
+            source=f"test_data_from_{config.DATASET_FILE}",
+            name="test_dataset"
+        )
+        mlflow.log_input(test_dataset, context="eval")
         
         # Evaluate on both train and test sets
         y_train_pred = classification_pipeline.predict(X_train)
@@ -201,6 +255,16 @@ def objective(params):
         test_recall = recall_score(y_test, y_test_pred)
         test_precision = precision_score(y_test, y_test_pred)
 
+        # Log dataset info (single entry)
+        mlflow.log_param("dataset_file", config.DATASET_FILE)
+        mlflow.log_param("train_samples", len(X_train))
+        mlflow.log_param("test_samples", len(X_test))
+        mlflow.log_param("features_count", len(config.FEATURES))
+        
+        # Log parameters manually
+        mlflow.log_param("model_type", "XGBoost")
+        mlflow.log_params(params)
+        
         mlflow.log_metrics({
             'train_f1_score': train_f1,
             'train_accuracy': train_accuracy,
@@ -211,7 +275,17 @@ def objective(params):
             'recall': test_recall,
             'precision': test_precision
         })
-        mlflow.sklearn.log_model(classification_pipeline, config.MODEL_NAME, registered_model_name=config.MODEL_NAME)
+        
+        # Register model with explicit name only
+        try:
+            mlflow.sklearn.log_model(
+                classification_pipeline, 
+                "trained_model",  # Use same artifact path as baseline
+                registered_model_name=config.MODEL_NAME
+            )
+            print(f"✅ XGBoost model registered as: {config.MODEL_NAME}")
+        except Exception as e:
+            print(f"⚠️ XGBoost model registration failed: {e}")
 
     # Use TEST F1 for optimization (not train F1!)
     return {'loss': 1 - test_f1, 'status': STATUS_OK}

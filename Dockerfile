@@ -19,10 +19,7 @@ RUN chmod +x /app/tests && \
     chmod +w /app/prediction_model/trained_models && \
     chmod +w /app/prediction_model/datasets
 
-# Install DVC with latest compatible version
-RUN pip install --no-cache-dir "dvc[s3]>=3.50.0"
-
-# Then install our requirements
+# Install dependencies (no DVC needed in runtime)
 RUN pip install --no-cache-dir -r requirements.txt
 
 # AWS credentials for DVC pull and MLflow
@@ -34,8 +31,8 @@ ENV AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
 ENV PYTHONPATH="/app:/app/prediction_model"
 ENV GIT_PYTHON_REFRESH=quiet
 
-# Pull dataset from S3 via DVC (proper MLOps workflow)
-RUN dvc pull prediction_model/datasets/loan_data_part_1.csv.dvc --force
+# Copy dataset (should be pulled by CI before Docker build)
+COPY prediction_model/datasets/loan_data_part_1.csv /app/prediction_model/datasets/
 
 # Train model (logs to MLflow)
 RUN python /app/prediction_model/training_pipeline.py

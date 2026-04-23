@@ -7,7 +7,7 @@ DATAPATH = os.path.join(PACKAGE_ROOT, "datasets")
 
 # Single source dataset — will be split 75/25 in data_handling
 # NOTE: Changing this will automatically update CI/CD and Docker build
-DATASET_FILE = 'loan_data_part_1.csv'
+DATASET_FILE = 'loan_data_part_2.csv'
 
 TARGET = 'loan_status'
 

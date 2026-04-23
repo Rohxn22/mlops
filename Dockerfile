@@ -28,7 +28,7 @@ ENV PYTHONPATH="/app:/app/prediction_model"
 ENV GIT_PYTHON_REFRESH=quiet
 
 # Copy dataset (should be pulled by CI before Docker build)
-COPY prediction_model/datasets/loan_data_part_1.csv /app/prediction_model/datasets/
+COPY prediction_model/datasets/loan_data_part_2.csv /app/prediction_model/datasets/
 
 # Train model (logs to MLflow)
 RUN python /app/prediction_model/training_pipeline.py

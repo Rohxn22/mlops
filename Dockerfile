@@ -1,87 +1,70 @@
-# Stage 1: Builder
-# Pulls data, trains model, runs tests
-# This stage is discarded after build - size doesn't matter
-
+# ─────────────────────────────────────────────
+# STAGE 1: Builder
+# Purpose: train the model and run tests
+# This stage is thrown away after build — only
+# the trained artifacts move to Stage 2
+# ─────────────────────────────────────────────
 FROM python:3.10-slim-buster AS builder
-
-RUN pip install --upgrade pip
 
 WORKDIR /app
 
-# Copy only necessary files for training (not everything)
 COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy source code and dataset
 COPY prediction_model/ ./prediction_model/
 COPY tests/ ./tests/
 COPY main.py .
 COPY static/ ./static/
 
-# Install all dependencies (including training deps)
-RUN pip install --no-cache-dir -r requirements.txt
+# Dataset is pulled from S3 via DVC in CI before this build runs
+COPY prediction_model/datasets/loan_data_part_3.csv ./prediction_model/datasets/
 
-# AWS credentials for MLflow logging
+# AWS credentials passed in from CI secrets (needed for MLflow logging)
 ARG AWS_ACCESS_KEY_ID
 ARG AWS_SECRET_ACCESS_KEY
 ENV AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
 ENV AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+ENV PYTHONPATH="/app"
 
-ENV PYTHONPATH="/app:/app/prediction_model"
-ENV GIT_PYTHON_REFRESH=quiet
+# Train the model — logs metrics and registers model in MLflow
+RUN python prediction_model/training_pipeline.py
 
-# Copy dataset (should be pulled by CI before Docker build)
-COPY prediction_model/datasets/loan_data_part_3.csv /app/prediction_model/datasets/
-
-# Train model (logs to MLflow)
-RUN python /app/prediction_model/training_pipeline.py
-
-# Run tests
-RUN pytest -v /app/tests/test_prediction.py
+# Run tests — if this fails, the image will NOT be built or pushed
+RUN pytest -v tests/test_prediction.py
 
 
-# Stage 2: Runtime
-# Only what's needed to serve the FastAPI app
-# Excludes: training libs (hyperopt, xgboost), datasets, tests, training scripts
-
+# ─────────────────────────────────────────────
+# STAGE 2: Runtime
+# Purpose: serve the FastAPI prediction API
+# Only contains what's needed to run the app —
+# no training code, no datasets, no test files
+# ─────────────────────────────────────────────
 FROM python:3.10-slim-buster AS runtime
-
-RUN pip install --upgrade pip
 
 WORKDIR /app
 
-# Copy only essential application files
+COPY requirements-runtime.txt .
+RUN pip install --no-cache-dir -r requirements-runtime.txt
+
+# Copy only the files needed to serve predictions
 COPY --from=builder /app/main.py .
 COPY --from=builder /app/static ./static
-
-# Copy only runtime prediction code (not training code)
 COPY --from=builder /app/prediction_model/__init__.py ./prediction_model/
 COPY --from=builder /app/prediction_model/predict.py ./prediction_model/
 COPY --from=builder /app/prediction_model/config ./prediction_model/config
-COPY --from=builder /app/prediction_model/trained_models ./prediction_model/trained_models
+COPY --from=builder /app/prediction_model/processing ./prediction_model/processing
 
-# Copy optimized runtime requirements
-COPY requirements-runtime.txt .
+# Copy the trained model — baked into the image, no MLflow needed at runtime
+COPY --from=builder /app/prediction_model/trained_models/model.pkl ./prediction_model/trained_models/
 
-ENV PYTHONPATH="/app"
-ENV GIT_PYTHON_REFRESH=quiet
-
-# AWS credentials for MLflow access at runtime
+# AWS credentials for MLflow model loading at runtime
 ARG AWS_ACCESS_KEY_ID
 ARG AWS_SECRET_ACCESS_KEY
 ENV AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
 ENV AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
-
-# Install only runtime dependencies (excludes hyperopt, xgboost training, pytest)
-RUN pip install --no-cache-dir -r requirements-runtime.txt
-
-# Clean up to reduce image size further
-RUN apt-get autoremove -y && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/* && \
-    rm -rf /root/.cache/pip && \
-    rm -rf /tmp/* && \
-    find /usr/local/lib/python3.10 -name "*.pyc" -delete && \
-    find /usr/local/lib/python3.10 -name "__pycache__" -type d -exec rm -rf {} + || true
+ENV PYTHONPATH="/app"
 
 EXPOSE 8005
 
-ENTRYPOINT ["python"]
-CMD ["main.py"]
+CMD ["python", "main.py"]

@@ -75,14 +75,15 @@ search_space = {
 }
 
 trials = Trials()
+xgb_results = []  # track (f1, pipeline) for each trial separately
 
 def objective(params):
     mlflow.xgboost.autolog(disable=True)
     clf = xgb.XGBClassifier(**params, eval_metric='logloss')
     pipeline = build_pipeline(clf)
     tag = datetime.now().strftime("%m%d-%H%M")
-    f1, pipeline = log_metrics(pipeline, f"xgb-trial-{len(trials.trials)+1}-{tag}", "XGBoost", params)
-    trials.trials[-1]['result']['pipeline'] = pipeline  # store for later
+    f1, fitted_pipeline = log_metrics(pipeline, f"xgb-trial-{len(trials.trials)+1}-{tag}", "XGBoost", params)
+    xgb_results.append((f1, fitted_pipeline))
     return {'loss': 1 - f1, 'status': STATUS_OK}
 
 
@@ -112,9 +113,7 @@ if __name__ == "__main__":
         fmin(fn=objective, space=search_space, algo=tpe.suggest, max_evals=3, trials=trials)
 
     # Pick best pipeline across baseline + xgboost trials
-    best_xgb_f1    = min(t['result']['loss'] for t in trials.trials)
-    best_xgb_pipe  = next(t['result']['pipeline'] for t in trials.trials
-                          if t['result']['loss'] == best_xgb_f1)
+    best_xgb_f1, best_xgb_pipe = max(xgb_results, key=lambda x: x[0])
 
     best_pipeline = baseline_pipeline if baseline_f1 >= (1 - best_xgb_f1) else best_xgb_pipe
 

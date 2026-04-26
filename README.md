@@ -1,5 +1,4 @@
-# End-to-End MLOps Pipeline for Automated Model Training, 
-Deployment, and Monitoring
+# End-to-End MLOps Pipeline for Automated Model Training, Deployment, and Monitoring
 
 ## Research Project: Demonstrating MLOps Superiority over Traditional ML
 

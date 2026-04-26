@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import boto3
 import pandas as pd
 from evidently.report import Report
@@ -73,7 +74,7 @@ def main():
         report.save_html(report_path)
 
         with open(report_path, 'r', encoding='utf-8') as f:
-            st.components.v1.html(f.read(), height=1000, scrolling=True)
+            components.html(f.read(), height=1000, scrolling=True)
 
 
 if __name__ == "__main__":

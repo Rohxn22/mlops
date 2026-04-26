@@ -18,7 +18,7 @@ COPY main.py .
 COPY static/ ./static/
 
 # Dataset is pulled from S3 via DVC in CI before this build runs
-COPY prediction_model/datasets/loan_data_part_1.csv ./prediction_model/datasets/
+COPY prediction_model/datasets/loan_data_part_2.csv ./prediction_model/datasets/
 
 # AWS credentials passed in from CI secrets (needed for MLflow logging)
 ARG AWS_ACCESS_KEY_ID

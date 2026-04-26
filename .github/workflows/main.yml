@@ -30,7 +30,7 @@ jobs:
     - name: Pull dataset from S3 via DVC
       run: |
         pip install "dvc[s3]"
-        dvc pull prediction_model/datasets/loan_data_part_1.csv.dvc --force
+        dvc pull prediction_model/datasets/loan_data_part_2.csv.dvc --force
 
     # Step 4: Log in to Docker Hub so we can push the built image
     - name: Login to Docker Hub

@@ -91,17 +91,34 @@ def tag_best_model():
     experiment = mlflow.get_experiment_by_name(config.EXPERIMENT_NAME)
     if not experiment:
         return
-    runs = mlflow.search_runs(
+    
+    # Get all runs to clear old tags first
+    all_runs = mlflow.search_runs(
+        experiment_ids=[experiment.experiment_id],
+        max_results=1000
+    )
+    
+    # Clear all existing BEST_MODEL tags
+    for _, run in all_runs.iterrows():
+        try:
+            with mlflow.start_run(run_id=run['run_id']):
+                mlflow.set_tag('model_status', '')  # Clear the tag
+        except:
+            pass  # Ignore errors for old runs
+    
+    # Find and tag the single best run
+    best_runs = mlflow.search_runs(
         experiment_ids=[experiment.experiment_id],
         order_by=['metrics.f1_score DESC'],
         max_results=1
     )
-    if runs.empty:
-        return
-    best_run_id = runs.iloc[0]['run_id']
-    with mlflow.start_run(run_id=best_run_id):
-        mlflow.set_tag('model_status', 'BEST_MODEL')
-    print(f"Best model tagged: {best_run_id[:8]} (F1: {runs.iloc[0]['metrics.f1_score']:.4f})")
+    
+    if not best_runs.empty:
+        best_run_id = best_runs.iloc[0]['run_id']
+        best_f1 = best_runs.iloc[0]['metrics.f1_score']
+        with mlflow.start_run(run_id=best_run_id):
+            mlflow.set_tag('model_status', 'BEST_MODEL')
+        print(f"Best model tagged: {best_run_id[:8]} (F1: {best_f1:.4f})")
 
 
 if __name__ == "__main__":

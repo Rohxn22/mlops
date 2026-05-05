@@ -18,7 +18,7 @@ COPY main.py .
 COPY static/ ./static/
 
 # Dataset is pulled from S3 via DVC in CI before this build runs
-COPY prediction_model/datasets/loan_data_part_3.csv ./prediction_model/datasets/
+COPY prediction_model/datasets/loan_data_part_3csv ./prediction_model/datasets/
 
 # AWS credentials passed in from CI secrets (needed for MLflow logging)
 ARG AWS_ACCESS_KEY_ID
@@ -35,8 +35,7 @@ RUN pytest -v tests/test_prediction.py
 
 
 # ─────────────────────────────────────────────
-# STAGE 2: Runtime
-# Purpose: serve the FastAPI prediction API
+# STAGE 2: Runtime# Purpose: serve the FastAPI prediction API
 # Only contains what's needed to run the app —
 # no training code, no datasets, no test files
 # ─────────────────────────────────────────────
@@ -48,7 +47,7 @@ COPY requirements-runtime.txt .
 RUN pip install --no-cache-dir -r requirements-runtime.txt
 
 # Copy only the files needed to serve predictions
-COPY --from=builder /app/main.py .
+COPY --from=builder /app/main.py .2.300
 COPY --from=builder /app/static ./static
 COPY --from=builder /app/prediction_model/__init__.py ./prediction_model/
 COPY --from=builder /app/prediction_model/predict.py ./prediction_model/
